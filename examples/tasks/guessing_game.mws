@@ -1,0 +1,33 @@
+using os
+
+new tries 10
+new solution {os.rand(100,1)}
+new answ 0
+
+print "Try to guess the number! You have 10 tries!"
+while (answ != solution && tries != 0) {
+    set answ {input("Your guess:")}
+    if({typeof {number(answ)}} == "Void") {
+        set answ 0
+        print "Please enter a valid number!"
+        continue
+    }
+    set answ {number(answ)}
+    if(answ < solution) {
+        print ("It's bigger! (" + {string((tries-1))} + " tries left)")
+    }
+    if(answ > solution) {
+        print ("It's smaller! (" + {string((tries-1))} + " tries left)")
+    }
+
+    set tries (tries-1)
+}
+
+# We ran out of tries
+if(answ != solution) {
+    print "You ran out of tries :c"
+    print ("The number was: " + {string(solution)})
+}
+else {
+    print "Congrats!"
+}

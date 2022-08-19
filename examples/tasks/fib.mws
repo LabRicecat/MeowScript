@@ -1,0 +1,16 @@
+func fib(a :: Number)->Number {
+    if(a == 0 || a == 1) {
+        return a
+    }
+    else {
+        new f1 (a-1)
+        new f2 (a-2)
+        return ({fib(f1)} + {fib(f2)})
+    }
+}
+
+
+fib(0)
+fib(1)
+fib(6)
+fib(20)
