@@ -377,7 +377,7 @@ static std::vector<Command> commandlist = {
     }},
     {"while",
         {
-            car_Expression | car_PlaceHolderAble,
+            car_Expression,
             car_Compound
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
@@ -386,10 +386,7 @@ static std::vector<Command> commandlist = {
         comp.erase(comp.begin());
         comp.erase(comp.begin()+comp.size()-1);
 
-        GeneralTypeToken check = tools::check4placeholder(gtt);
-        if(check.type == General_type::EXPRESSION) {
-            check = parse_expression(check.to_string());
-        }
+        GeneralTypeToken check = parse_expression(gtt.to_string());
 
         while(check.type == General_type::NUMBER && check.to_variable().storage.number == 1) {
             ++global::in_loop;
@@ -405,10 +402,7 @@ static std::vector<Command> commandlist = {
             if(global::continue_loop != 0) {
                 --global::continue_loop;
             }
-            check = tools::check4placeholder(gtt);
-            if(check.type == General_type::EXPRESSION) {
-                check = parse_expression(check.to_string());
-            }
+            check = parse_expression(gtt.to_string());
         }
         return general_null;
     }},
@@ -543,12 +537,18 @@ static std::vector<Command> commandlist = {
                 }
             case General_type::LIST:
                 return alist[0].to_variable().storage.list;
+            case General_type::NUMBER:
+                {
+                    List ret;
+                    for(size_t i = 0; i < alist[0].to_variable().storage.number; ++i) {
+                        ret.elements.push_back(i);
+                    }
+                }
             default:
                 return general_null;
         }
         return general_null;
     }},
-
 
 };
 

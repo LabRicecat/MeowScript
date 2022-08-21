@@ -3,6 +3,7 @@
 
 #include "defs.hpp"
 #include "variables.hpp"
+#include "global.hpp"
 
 #include <stack>
 #include <string>
@@ -65,7 +66,21 @@ inline std::unordered_map<std::string,std::vector<Operator>> operators = {
             {
                 Variable::Type::Number, Variable::Type::Number, 2,
                 [](Variable left, Variable right)->Variable {
+                    if(right.storage.number == 0) {
+                        throw errors::MWSMessageException{"Can't devide by 0!",global::get_line()};
+                    }
                     return left.storage.number / right.storage.number;
+                }
+            },
+        }},
+        {"%", {
+            {
+                Variable::Type::Number, Variable::Type::Number, 2,
+                [](Variable left, Variable right)->Variable {
+                    if(right.storage.number == 0) {
+                        throw errors::MWSMessageException{"Can't devide by 0!",global::get_line()};
+                    }
+                    return int(left.storage.number) % int(right.storage.number);
                 }
             },
         }},
