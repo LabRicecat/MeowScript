@@ -23,18 +23,13 @@ int main(int argc, char** argv) {
         std::cout << MEOWSCRIPT_VERSION_STR << "\n";
         return 0;
     }
-    /*else if(arg == "--build-stdlib" || arg == "--bstdlib") {
-        if(MeowScript::build_stdlib()) {
-            std::cout << "Building was successful!\n";
-        }
-
-    }*/
     else {
         if(!MeowScript::check_paths()) {
             MeowScript::make_paths();
         }
         try {
-            MeowScript::run_file(std::string(argv[1]));
+            std::filesystem::path from = std::filesystem::path(std::string(argv[1]));
+            MeowScript::run_file(std::string(argv[1]),true,false,-1,{},from);
         }
         catch(MeowScript::errors::MWSMessageException& err) {
             std::cout << "Error in line " << err.get_line() << ":\n" << err.what() << "\n";

@@ -199,6 +199,7 @@ static std::vector<Command> commandlist = {
                 throw errors::MWSMessageException{"Invalid argument format!",global::get_line()};
             }
         }
+        fun.file = global::include_path.top();
         if(!add_function(args[0].source.content,fun)) {
             throw errors::MWSMessageException{"Can't redefine function: " + args[0].source.content,global::get_line()};
         }
@@ -550,6 +551,23 @@ static std::vector<Command> commandlist = {
         return general_null;
     }},
 
+    {"import",
+        {
+            car_String,
+        },
+    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        std::filesystem::path pth = global::include_path.top().remove_filename().string() + args[0].source.content;
+        std::filesystem::path pth2;
+        
+        if(!std::filesystem::exists(pth)) {
+            pth2 = pth.string() + ".mws";
+        }
+        if(!std::filesystem::exists(pth2)) {
+            throw errors::MWSMessageException{"Trying to import unknown file: \"" + pth.string() + "\"",global::get_line()};
+        }
+
+        return run_file(pth2,true,false,-1,{},pth2,false,true);
+    }},
 };
 
 std::vector<Command>* MeowScript::get_command_list() {

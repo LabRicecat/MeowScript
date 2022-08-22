@@ -10,10 +10,9 @@ void sleep_(int milliseconds) {
     Sleep(milliseconds);
 }
 #elif defined(MEOWSCRIPT_USE_LINUX)
-#include <unistd.h>
 
 void sleep_(int milliseconds) {
-    usleep(milliseconds*100);
+    std::this_thread::sleep_for(std::chrono::milliseconds(milliseconds));
 }
 #endif
 
@@ -97,7 +96,7 @@ public:
                     throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\t- But got: " + general_t2token(alist[0].type).content,global::get_line()};
                 }
                 
-                std::this_thread::sleep_for(std::chrono::milliseconds(int(alist[0].to_variable().storage.number)));
+                sleep_(alist[0].to_variable().storage.number);
                 return general_null;
             }}
         ).add_command(

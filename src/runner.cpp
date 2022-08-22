@@ -4,19 +4,11 @@
 
 MEOWSCRIPT_SOURCE_FILE
 
-GeneralTypeToken MeowScript::run_file(std::string file, bool new_scope, bool save_scope, int load_idx, std::map<std::string,Variable> external_vars, fs::path from, bool pass_return_down) {
-    if(from != "") {
-        return run_text(from.remove_filename().string() + MEOWSCRIPT_DIR_SL + read(file),true,save_scope,load_idx,external_vars,from,pass_return_down);
-    }
-    else if(!global::include_path.empty()) {
-        return run_text(read(global::include_path.top().remove_filename().string() + MEOWSCRIPT_DIR_SL + file),true,save_scope,load_idx,external_vars,from,pass_return_down);
-    }
-    else {
-        return run_text(read(file),true,save_scope,load_idx,external_vars,from,pass_return_down);
-    }
+GeneralTypeToken MeowScript::run_file(std::string file, bool new_scope, bool save_scope, int load_idx, std::map<std::string,Variable> external_vars, fs::path from, bool pass_return_down, bool same_scope) {
+    return run_text(read(file),true,save_scope,load_idx,external_vars,from,pass_return_down,same_scope);
 }
 
-GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool save_scope, int load_idx, std::map<std::string,Variable> external_vars, fs::path from, bool pass_return_down) {
+GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool save_scope, int load_idx, std::map<std::string,Variable> external_vars, fs::path from, bool pass_return_down, bool same_scope) {
     if(from != "") {
         global::include_path.push(from);
     }
@@ -24,7 +16,9 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
         if(!new_scope) {
             save_scope = false; // potential "memory leak" if else!
         }
-        MeowScript::new_scope(new_scope ? -2:-1,external_vars);
+        if(!same_scope) {
+            MeowScript::new_scope(new_scope ? -2:-1,external_vars);
+        }
     }
     else {
         load_scope(load_idx,external_vars);
@@ -270,7 +264,9 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
             if(from != "") {
                 global::include_path.pop();
             }
-            pop_scope(save_scope);
+            if(!same_scope) {
+                pop_scope(save_scope);
+            }
             global::line_count.pop();
             return ret;
         }
@@ -278,7 +274,9 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
             if(from != "") {
                 global::include_path.pop();
             }
-            pop_scope(save_scope);
+            if(!same_scope) {
+                pop_scope(save_scope);
+            }
             global::line_count.pop();
             return GeneralTypeToken();
         }
@@ -286,7 +284,9 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
             if(from != "") {
                 global::include_path.pop();
             }
-            pop_scope(save_scope);
+            if(!same_scope) {
+                pop_scope(save_scope);
+            }
             global::line_count.pop();
             return GeneralTypeToken();
         }
@@ -294,7 +294,9 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
             if(from != "") {
                 global::include_path.pop();
             }
-            pop_scope(save_scope);
+            if(!same_scope) {
+                pop_scope(save_scope);
+            }
             global::line_count.pop();
             return ret;
         }
@@ -306,12 +308,14 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
     if(from != "") {
         global::include_path.pop();
     }
-    pop_scope(save_scope);
+    if(!same_scope) {
+        pop_scope(save_scope);
+    }
     global::line_count.pop();
-    return GeneralTypeToken();
+    return general_null;
 }
 
-GeneralTypeToken MeowScript::run_text(std::string text, bool new_scope, bool save_scope, int load_idx, std::map<std::string,Variable> external_vars, fs::path from, bool pass_return_down) {
+GeneralTypeToken MeowScript::run_text(std::string text, bool new_scope, bool save_scope, int load_idx, std::map<std::string,Variable> external_vars, fs::path from, bool pass_return_down, bool same_scope) {
     auto lines = lex_text(text);
-    return run_lexed(lines,new_scope,save_scope,load_idx,external_vars,from,pass_return_down);
+    return run_lexed(lines,new_scope,save_scope,load_idx,external_vars,from,pass_return_down,same_scope);
 }

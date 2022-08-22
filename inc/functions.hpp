@@ -16,6 +16,7 @@ public:
     std::vector<std::string> arg_names;
     unsigned int scope_idx = 0;
     Variable::Type return_type = Variable::Type::UNKNOWN;
+    std::filesystem::path file;
     // Takes care of the required amount of arguments and their types as well as the return value
     // Throws `MWSMessageException` on error
     Variable run(std::vector<Variable> args);

@@ -93,7 +93,7 @@ public:
                     std::string file = tools::check4placeholder(args[0]).to_variable().storage.string;
                     GeneralTypeToken ret;
                     ret.type = General_type::STRING;
-                    ret.source.content = std::filesystem::path(file).extension();;
+                    ret.source.content = std::filesystem::path(file).extension().string();
                     ret.source.in_quotes = true;
                     return ret;
                 }

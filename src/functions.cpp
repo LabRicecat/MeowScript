@@ -20,7 +20,7 @@ Variable MeowScript::Function::run(std::vector<Variable> args) {
         arg_map[arg_names[i]] = args[i]; 
     }
 
-    GeneralTypeToken gtt_ret = run_lexed(body,true,true,scope_idx,arg_map);
+    GeneralTypeToken gtt_ret = run_lexed(body,true,true,scope_idx,arg_map,this->file);
     if(gtt_ret.type != General_type::VOID && gtt_ret.type != General_type::UNKNOWN) {
         Variable var_ret;
         try {

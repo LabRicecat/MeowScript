@@ -59,6 +59,10 @@ bool MeowScript::load_module(std::string name) {
 #include <windows.h>
 #include <Lmcons.h>
 
+#define MEOWSCRIPT_PATH "C:\\ProgramData\\.meowscript\\"
+#define MEOWSCRIPT_CONFIG_PATH "C:\\ProgramData\\.meowscript\\config.mwsconf"
+#define MEOWSCRIPT_MODULE_PATH "C:\\ProgramData\\.meowscript\\lib\\"
+
 static std::string wstring2string(std::wstring wstr) {
     using convert_typeX = std::codecvt_utf8<wchar_t>;
     std::wstring_convert<convert_typeX,wchar_t> converterX;
@@ -69,13 +73,13 @@ static std::wstring string2wstring(std::string str) {
     using convert_typeX = std::codecvt_utf8<wchar_t>;
     std::wstring_convert<convert_typeX,wchar_t> converterX;
 
-    return converterX.to_bytes(wstr);
+    return converterX.to_bytes(str);
 }
 
 std::string MeowScript::get_username() {
     TCHAR username[UNLEN+1];
     DWORD size = UNLEN +1;
-    GerUserName((TCHAR*)username,&size);
+    GetUserName((TCHAR*)username,&size);
 
     std::wstring tmp(username,size-1);
     
@@ -97,7 +101,7 @@ void MeowScript::load_all_modules() {
 bool MeowScript::load_module(std::string name) {
     for(auto i : std::filesystem::recursive_directory_iterator(MEOWSCRIPT_MODULE_PATH)) {
         if(i.path().filename() == name) {
-            auto pth = string2wstring(i.path().string());s
+            auto pth = string2wstring(i.path().string());
             auto h = LoadLibrary(pth.c_str());
             if(h) {
                 throw errors::MWSMessageException{"Error while loading module!",0};
@@ -107,10 +111,6 @@ bool MeowScript::load_module(std::string name) {
     }
     return false;
 }
-
-#define MEOWSCRIPT_PATH "C:\\ProgramData\\.meowscript\\"
-#define MEOWSCRIPT_CONFIG_PATH "C:\\ProgramData\\.meowscript\\config.mwsconf"
-#define MEOWSCRIPT_MODULE_PATH "C:\\ProgramData\\.meowscript\\lib\\"
 
 #else
 
@@ -230,11 +230,11 @@ bool MeowScript::build_stdlib() {
     system("cd .. && cd stdlib && mkdir build && cd build && cmake ../ && make");
     for(auto i : std::filesystem::recursive_directory_iterator(".." MEOWSCRIPT_DIR_SL "stdlib" MEOWSCRIPT_DIR_SL "build")) {
         if(i.path().extension() == MEOWSCRIPT_SHARED_OBJECT_EXT) {
-            std::string name = i.path().filename();
+            std::string name = i.path().filename().string();
             name.erase(name.begin(),name.begin()+3); // remove the `lib`
             
-            if(std::filesystem::exists(MEOWSCRIPT_MODULE_PATH + name.c_str())) {
-                std::filesystem::remove_all(MEOWSCRIPT_MODULE_PATH + name.c_str());
+            if(std::filesystem::exists(std::string(MEOWSCRIPT_MODULE_PATH) + name.c_str())) {
+                std::filesystem::remove_all(std::string(MEOWSCRIPT_MODULE_PATH) + name.c_str());
             }
             std::filesystem::copy(i.path(),MEOWSCRIPT_MODULE_PATH + name);
         }
