@@ -109,9 +109,6 @@ static std::vector<Command> commandlist = {
         args[4].source.content.erase(args[4].source.content.begin());
         args[4].source.content.erase(args[4].source.content.begin()+args[4].source.content.size()-1);
         fun.body = lex_text(args[4].source.content);
-        
-        args[1].source.content.erase(args[1].source.content.begin());
-        args[1].source.content.erase(args[1].source.content.begin()+args[1].source.content.size()-1);
 
         if(args[2].to_string() != "->") {
             throw errors::MWSMessageException{"Expected \"->\" to declarate a return value, but got: " + args[2].to_string(),global::get_line()};
@@ -130,75 +127,10 @@ static std::vector<Command> commandlist = {
             fun.return_type = token2var_t(args[3].to_string());
         }
 
-        auto lines = lex_text(args[1].source);
-        std::vector<Token> line;
-        for(auto i : lines) {
-            for(auto j : i.source) {
-                line.push_back(j);
-            }
-        }
+        auto [names,types] = tools::parse_function_params(args[1].source);
+        fun.arg_names = names;
+        fun.args = types;
 
-        std::vector<Token> nline;
-        for(size_t i = 0; i < line.size(); ++i) {
-            nline.push_back("");
-            for(size_t j = 0; j < line[i].content.size(); ++j) {
-                if(line[i].content[j] == ',') {
-                    nline.push_back(",");
-                    nline.push_back("");
-                }
-                else {
-                    nline.back().content += line[i].content[j];
-                }
-            }
-        }
-
-        std::vector<std::vector<Token>> arguments;
-        if(nline.size() != 0)
-            arguments.push_back({});
-        for(size_t i = 0; i < nline.size(); ++i) {
-            if(nline[i].content == ",") {
-                if(arguments.back().empty()) {
-                    throw errors::MWSMessageException{"Invalid argument format!",global::get_line()};
-                }
-                arguments.push_back({});
-            }
-            else {
-                arguments.back().push_back(nline[i]);
-            }
-        }
-
-        for(auto i : arguments) {
-            for(size_t j = 0; j < i.size(); ++j) {
-                if(i[j].content == "") {
-                    i.erase(i.begin()+j);
-                    --j;
-                }
-            }
-
-            if(i.size() == 1) {
-                if(!is_valid_name(i[0])) {
-                    throw errors::MWSMessageException{"Enexpected token: " + i[0].content,global::get_line()};
-                }
-                fun.arg_names.push_back(i[0]);
-                fun.args.push_back(Variable::Type::UNKNOWN);
-            }
-            else if(i.size() == 3) {
-                if(!is_valid_name(i[0])) {
-                    throw errors::MWSMessageException{"Enexpected token: " + i[0].content,global::get_line()};
-                }
-                if(i[1].content != "::") {
-                    throw errors::MWSMessageException{"Invalid argument format!",global::get_line()};
-                }
-                if(!is_valid_var_t(i[2])) {
-                    throw errors::MWSMessageException{i[2].content + " is not a known VariableType or class!",global::get_line()};
-                }
-                fun.arg_names.push_back(i[0]);
-                fun.args.push_back(token2var_t(i[2]));
-            }
-            else {
-                throw errors::MWSMessageException{"Invalid argument format!",global::get_line()};
-            }
-        }
         fun.file = global::include_path.top();
         if(!add_function(args[0].source.content,fun)) {
             throw errors::MWSMessageException{"Can't redefine function: " + args[0].source.content,global::get_line()};
@@ -567,6 +499,127 @@ static std::vector<Command> commandlist = {
         }
 
         return run_file(pth2,true,false,-1,{},pth2,false,true);
+    }},
+
+    {"event",
+        {
+            car_Keyword,
+            car_Name,
+            car_ArgumentList
+        },
+    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        if(is_event(args[1].source.content)) {
+            throw errors::MWSMessageException{"Can't define event: \"" + args[1].source.content + "\"",global::get_line()};
+        }
+
+        Event event;
+        event.from_file = global::include_path.top();
+        if(args[0].to_string() == "public") {
+            event.visibility = Event::Visibility::PUBLIC;
+        }
+        else if(args[0].to_string() == "private") {
+            event.visibility = Event::Visibility::PRIVATE;
+        }
+        else if(args[0].to_string() == "listen_only") {
+            event.visibility = Event::Visibility::LISTEN_ONLY;
+        }
+        else if(args[0].to_string() == "occur_only") {
+            event.visibility = Event::Visibility::OCCUR_ONLY;
+        }
+        else {
+            throw errors::MWSMessageException{"Unknown visibility: \"" + args[0].source.content + "\".\nKnown are: [public,private,call_only,occur_only]",global::get_line()};
+        }
+
+        auto [names,types] = tools::parse_function_params(args[2].source);
+
+        event.arg_names = names;
+        event.arg_types = types;
+
+        global::events[args[1].source.content] = event;
+        return general_null;
+    }},
+    {"occur",
+        {
+            car_Event,
+            car_ArgumentList
+        },
+    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        if(!is_event(args[0].source.content)) {
+            throw errors::MWSMessageException{"No such event to occur: \"" + args[0].source.content + "\"",global::get_line()};
+        }
+        Event eve = global::events[args[0].source.content];
+        if((eve.visibility != Event::Visibility::PUBLIC && eve.visibility != Event::Visibility::OCCUR_ONLY) && eve.from_file != global::include_path.top()) {
+            throw errors::MWSMessageException{"Can't occur inaccessable event: \"" + args[0].source.content + "\"",global::get_line()};
+        }
+
+        argument_list alist = tools::parse_argument_list(args[1].source);
+
+        if(alist.size() != eve.arg_names.size()) {
+            std::string err = "Too many/few arguments for event: " + args[0].source.content + "\n\t- Expected: " + std::to_string(eve.arg_names.size()) + "\n\t- But got: " + std::to_string(alist.size());
+            throw errors::MWSMessageException{err,global::get_line()};
+        }
+
+        for(size_t j = 0; j < alist.size(); ++j) {
+            alist[j] = tools::check4placeholder(alist[j]);
+        }
+
+        std::vector<Variable> pargs;
+        for(size_t j = 0; j < eve.arg_types.size(); ++j) {
+            try {
+                if(eve.arg_types[j] != Variable::Type::UNKNOWN && eve.arg_types[j] != general_t2var_t(alist[j].type)) {
+                    std::string err_msg = "Invalid argument:\n\t- Expected: " + var_t2token(eve.arg_types[j]).content + "\n\t- But got: " + var_t2token(alist[j].to_variable().type).content;
+                    throw errors::MWSMessageException(err_msg,global::get_line());
+                }
+                else {
+                    ++global::in_argument_list;
+                    pargs.push_back(alist[j].to_variable());
+                    --global::in_argument_list;
+                }
+            }
+            catch(errors::MWSMessageException& err) {
+                std::string err_msg = "Can't convert GeneralType " + general_t2token(alist[j].type).content + " to VariableType " + var_t2token(eve.arg_types[j]).content + " as function parameter for function: " + args[0].source.content;
+                throw errors::MWSMessageException{err_msg,global::get_line()};
+            }
+        }
+
+        for(auto i : eve.listeners) {
+            i.run(pargs);
+        }
+        return general_null;
+    }},
+    {"listen",
+        {
+            car_Event,
+            car_ArgumentList,
+            car_Compound
+        },
+    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        if(!is_event(args[0].source.content)) {
+            throw errors::MWSMessageException{"No such event to listen to: \"" + args[0].source.content + "\"",global::get_line()};
+        }
+
+        Event eve = global::events[args[0].source.content];
+        if((eve.visibility != Event::Visibility::PUBLIC && eve.visibility != Event::Visibility::LISTEN_ONLY) && eve.from_file != global::include_path.top()) {
+            throw errors::MWSMessageException{"Can't listen to inaccessable event: \"" + args[0].source.content + "\"",global::get_line()};
+        }
+
+        args[2].source.content.erase(args[2].source.content.begin());
+        args[2].source.content.erase(args[2].source.content.begin() + args[2].source.content.size() - 1);
+        std::string r = args[2].source.content;
+
+        auto [names,types] = tools::parse_function_params(args[1].source);
+
+        Function fun;
+        fun.body = lex_text(r);
+        fun.return_type = Variable::Type::VOID;
+        fun.file = global::include_path.top();
+        fun.scope_idx = get_new_scope();
+        fun.arg_names = names;
+        fun.args = types;
+        scopes[fun.scope_idx].parent = current_scope()->index;
+
+        global::events[args[0].source.content].listeners.push_back(fun);
+        return general_null;
     }},
 };
 

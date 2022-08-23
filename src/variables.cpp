@@ -80,6 +80,8 @@ Token MeowScript::general_t2token(General_type type) {
         "Argumentlist",
         "Operator",
         "Module",
+        "Event",
+        "Keyword",
         "Unknown",
         "Void"
     };
@@ -171,6 +173,12 @@ General_type MeowScript::get_type(Token context, CommandArgReqirement expected) 
     }
     if(is_loaded_module(context.content)) {
         return General_type::MODULE;
+    }
+    if(is_event(context.content)) {
+        return General_type::EVENT;
+    }
+    if(is_known_keyword(context)) {
+        return General_type::KEYWORD;
     }
     if(is_valid_name(context)) {
         return General_type::NAME;

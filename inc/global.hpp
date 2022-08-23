@@ -3,6 +3,7 @@
 
 #include "defs.hpp"
 
+#include <map>
 #include <filesystem>
 #include <stack>
 

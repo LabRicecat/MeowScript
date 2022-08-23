@@ -108,6 +108,10 @@ struct GeneralTypeToken {
     }
 };
 
+namespace tools {
+    std::tuple<std::vector<std::string>,std::vector<Variable::Type>> parse_function_params(Token context);
+}
+
 inline const GeneralTypeToken general_null = GeneralTypeToken{};
 
 // Conversion functions

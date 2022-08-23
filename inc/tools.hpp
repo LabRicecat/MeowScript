@@ -4,6 +4,8 @@
 #include "defs.hpp"
 #include "reader.hpp"
 
+#include <tuple>
+
 MEOWSCRIPT_HEADER_BEGIN
 
 struct GeneralTypeToken;

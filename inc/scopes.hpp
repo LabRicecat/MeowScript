@@ -41,6 +41,7 @@ void set_variable(std::string name, Variable var);
 void new_variable(std::string name, Variable var);
 
 bool is_function(std::string name);
+
 Function* get_function(std::string name);
 // returns false if it fails
 // does not override existing functions in scope

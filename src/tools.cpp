@@ -62,6 +62,88 @@ argument_list MeowScript::tools::parse_argument_list(Token context) {
     return ret;
 }
 
+std::tuple<std::vector<std::string>,std::vector<Variable::Type>> MeowScript::tools::parse_function_params(Token context) {
+    if(brace_check(context,'(',')')) {
+        context.content.erase(context.content.begin());
+        context.content.erase(context.content.begin()+context.content.size()-1);
+    }
+    auto lines = lex_text(context.content);
+    if(lines.empty()) {
+        return {};
+    }
+    std::vector<Variable::Type> l2;
+    std::vector<std::string> l1;
+    std::vector<Token> line;
+    for(auto i : lines) {
+        for(auto j : i.source) {
+            line.push_back(j);
+        }
+    }
+
+    std::vector<Token> nline;
+    for(size_t i = 0; i < line.size(); ++i) {
+        nline.push_back("");
+        for(size_t j = 0; j < line[i].content.size(); ++j) {
+            if(line[i].content[j] == ',') {
+                nline.push_back(",");
+                nline.push_back("");
+            }
+            else {
+                nline.back().content += line[i].content[j];
+            }
+        }
+    }
+
+    std::vector<std::vector<Token>> arguments;
+    if(nline.size() != 0)
+        arguments.push_back({});
+    for(size_t i = 0; i < nline.size(); ++i) {
+        if(nline[i].content == ",") {
+            if(arguments.back().empty()) {
+                throw errors::MWSMessageException{"Invalid argument format!",global::get_line()};
+            }
+            arguments.push_back({});
+        }
+        else {
+            arguments.back().push_back(nline[i]);
+        }
+    }
+
+    for(auto i : arguments) {
+        for(size_t j = 0; j < i.size(); ++j) {
+            if(i[j].content == "") {
+                i.erase(i.begin()+j);
+                --j;
+            }
+        }
+
+        if(i.size() == 1) {
+            if(!is_valid_name(i[0])) {
+                throw errors::MWSMessageException{"Enexpected token: " + i[0].content,global::get_line()};
+            }
+            l1.push_back(i[0]);
+            l2.push_back(Variable::Type::UNKNOWN);
+        }
+        else if(i.size() == 3) {
+            if(!is_valid_name(i[0])) {
+                throw errors::MWSMessageException{"Enexpected token: " + i[0].content,global::get_line()};
+            }
+            if(i[1].content != "::") {
+                throw errors::MWSMessageException{"Invalid argument format!",global::get_line()};
+            }
+            if(!is_valid_var_t(i[2])) {
+                throw errors::MWSMessageException{i[2].content + " is not a known VariableType or class!",global::get_line()};
+            }
+            l1.push_back(i[0]);
+            l2.push_back(token2var_t(i[2]));
+        }
+        else {
+            throw errors::MWSMessageException{"Invalid argument format!",global::get_line()};
+        }
+    }
+    return std::make_tuple(l1,l2);
+}
+
 GeneralTypeToken MeowScript::tools::check4var(GeneralTypeToken token) {
     if(token.type == General_type::NAME) {
         Variable* var = get_variable(token.source);

@@ -4,3 +4,4 @@ TODOLIST.txt
 build
 bin
 .vscode
+examples/tasks/find_word.mws

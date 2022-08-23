@@ -100,6 +100,10 @@ bool MeowScript::is_function(std::string name) {
     return get_function(name) != nullptr;
 }
 
+bool MeowScript::is_event(std::string name) {
+    return global::events.count(name) != 0;
+}
+
 Function* MeowScript::get_function(std::string name) {
     int index = current_scope()->index;
     while(index != -1) {

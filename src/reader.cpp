@@ -187,6 +187,8 @@ bool MeowScript::is_valid_general_t(Token context) {
         "Argumentlist",
         "Operator",
         "Module",
+        "Event",
+        "Keyword",
         "Unknown",
         "Void"
     };
@@ -237,6 +239,15 @@ bool MeowScript::is_valid_name(Token context) {
         }
     }
     return true;
+}
+
+bool MeowScript::is_known_keyword(Token text) {
+    return (
+        text.content == "public"  ||
+        text.content == "private" ||
+        text.content == "listen_only" ||
+        text.content == "occur_only"
+    );
 }
 
 bool MeowScript::is_valid_argumentlist(Token context) {
