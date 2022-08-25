@@ -377,6 +377,75 @@ std::vector<Method<List>> list_method_list = {
         self->elements.insert(self->elements.begin()+index,value);
         return *self;
     }},
+    {"erase",
+    {
+        car_ArgumentList,
+    },
+    [](std::vector<GeneralTypeToken> args, List* self)->GeneralTypeToken {
+        auto alist = tools::parse_argument_list(args[0]);
+        if(alist.size() != 1) {
+            throw errors::MWSMessageException{"Too many/few arguments for list method!\n\t- Expected: 1\n\t- But got: " + std::to_string(alist.size()),global::get_line()};
+        }
+        auto idx = tools::check4placeholder(alist[0]);
+        if(idx.type != General_type::NUMBER) {
+            throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\tBut got: " + general_t2token(idx.type).content,global::get_line()};
+        }
+        int index = idx.to_variable().storage.number;
+        if(index < 0 || index >= self->elements.size()) {
+            throw errors::MWSMessageException{"Index is not allowed to be less than 0 or bigger than the total size.",global::get_line()};
+        }
+        if(self->elements.size() == 0) {
+            throw errors::MWSMessageException{"Can't call method \"erase\" a on empty list!",global::get_line()};
+        }
+        self->elements.erase(self->elements.begin()+index);
+        return *self;
+    }},
+    {"pop_front",
+    {
+        car_ArgumentList,
+    },
+    [](std::vector<GeneralTypeToken> args, List* self)->GeneralTypeToken {
+        auto alist = tools::parse_argument_list(args[0]);
+        if(alist.size() != 0) {
+            throw errors::MWSMessageException{"Too many/few arguments for list method!\n\t- Expected: 0\n\t- But got: " + std::to_string(alist.size()),global::get_line()};
+        }
+        if(self->elements.size() == 0) {
+            throw errors::MWSMessageException{"Can't call method \"pop_front\" a on empty list!",global::get_line()};
+        }
+        self->elements.erase(self->elements.begin());
+        return general_null;
+    }},
+    {"pop_back",
+    {
+        car_ArgumentList,
+    },
+    [](std::vector<GeneralTypeToken> args, List* self)->GeneralTypeToken {
+        auto alist = tools::parse_argument_list(args[0]);
+        if(alist.size() != 0) {
+            throw errors::MWSMessageException{"Too many/few arguments for list method!\n\t- Expected: 0\n\t- But got: " + std::to_string(alist.size()),global::get_line()};
+        }
+        if(self->elements.size() == 0) {
+            throw errors::MWSMessageException{"Can't call method \"pop_back\" a on empty list!",global::get_line()};
+        }
+        self->elements.pop_back();
+        return general_null;
+    }},
+    {"push_back",
+    {
+        car_ArgumentList,
+    },
+    [](std::vector<GeneralTypeToken> args, List* self)->GeneralTypeToken {
+        auto alist = tools::parse_argument_list(args[0]);
+        if(alist.size() != 1) {
+            throw errors::MWSMessageException{"Too many/few arguments for list method!\n\t- Expected: 1\n\t- But got: " + std::to_string(alist.size()),global::get_line()};
+        }
+        auto elem = tools::check4placeholder(alist[0]);
+        if(!is_valid_var_t(general_t2token(elem.type))) {
+            throw errors::MWSMessageException{"Invalid argument to push back!\n\t- Expected: [Number,String,List]\n\tBut got: " + general_t2token(elem.type).content,global::get_line()};
+        }
+        self->elements.push_back(elem.to_variable());
+        return general_null;
+    }},
 };
 
 std::vector<Method<List>>* MeowScript::get_list_method_list() {
@@ -495,6 +564,75 @@ std::vector<Method<Token>> string_method_list = {
         ret.source = *self;
         ret.type = General_type::STRING;
         return ret;
+    }},
+    {"erase",
+    {
+        car_ArgumentList,
+    },
+    [](std::vector<GeneralTypeToken> args, Token* self)->GeneralTypeToken {
+        auto alist = tools::parse_argument_list(args[0]);
+        if(alist.size() != 1) {
+            throw errors::MWSMessageException{"Too many/few arguments for string method!\n\t- Expected: 1\n\t- But got: " + std::to_string(alist.size()),global::get_line()};
+        }
+        auto idx = tools::check4placeholder(alist[0]);
+        if(idx.type != General_type::NUMBER) {
+            throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\tBut got: " + general_t2token(idx.type).content,global::get_line()};
+        }
+        int index = idx.to_variable().storage.number;
+        if(index < 0 || index >= self->content.size()) {
+            throw errors::MWSMessageException{"Index is not allowed to be less than 0 or bigger than the total size.",global::get_line()};
+        }
+        if(self->content.size() == 0) {
+            throw errors::MWSMessageException{"Can't call method \"erase\" a on empty string!",global::get_line()};
+        }
+        self->content.erase(self->content.begin()+index);
+        return *self;
+    }},
+    {"pop_front",
+    {
+        car_ArgumentList,
+    },
+    [](std::vector<GeneralTypeToken> args, Token* self)->GeneralTypeToken {
+        auto alist = tools::parse_argument_list(args[0]);
+        if(alist.size() != 0) {
+            throw errors::MWSMessageException{"Too many/few arguments for string method!\n\t- Expected: 0\n\t- But got: " + std::to_string(alist.size()),global::get_line()};
+        }
+        if(self->content.size() == 0) {
+            throw errors::MWSMessageException{"Can't call method \"pop_front\" a on empty string!",global::get_line()};
+        }
+        self->content.erase(self->content.begin());
+        return general_null;
+    }},
+    {"pop_back",
+    {
+        car_ArgumentList,
+    },
+    [](std::vector<GeneralTypeToken> args, Token* self)->GeneralTypeToken {
+        auto alist = tools::parse_argument_list(args[0]);
+        if(alist.size() != 0) {
+            throw errors::MWSMessageException{"Too many/few arguments for string method!\n\t- Expected: 0\n\t- But got: " + std::to_string(alist.size()),global::get_line()};
+        }
+        if(self->content.size() == 0) {
+            throw errors::MWSMessageException{"Can't call method \"pop_back\" a on empty string!",global::get_line()};
+        }
+        self->content.pop_back();
+        return general_null;
+    }},
+    {"push_back",
+    {
+        car_ArgumentList,
+    },
+    [](std::vector<GeneralTypeToken> args, Token* self)->GeneralTypeToken {
+        auto alist = tools::parse_argument_list(args[0]);
+        if(alist.size() != 1) {
+            throw errors::MWSMessageException{"Too many/few arguments for string method!\n\t- Expected: 1\n\t- But got: " + std::to_string(alist.size()),global::get_line()};
+        }
+        auto elem = tools::check4placeholder(alist[0]);
+        if(elem.type != General_type::STRING) {
+            throw errors::MWSMessageException{"Invalid argument to push back!\n\t- Expected: String\n\tBut got: " + general_t2token(elem.type).content,global::get_line()};
+        }
+        self->content += elem.source.content;
+        return general_null;
     }},
 };
 

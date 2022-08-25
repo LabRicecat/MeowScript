@@ -139,12 +139,15 @@ static std::vector<Command> commandlist = {
     }},
     {"print",
         {
-            car_Any
+            car_String | car_Number | car_List | car_Expression | car_PlaceHolderAble
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
         GeneralTypeToken gtt = tools::check4placeholder(args[0]);
         if(gtt.type == General_type::STRING) {
             std::cout << gtt.source.content << "\n";
+        }
+        else if(gtt.type == General_type::NAME) {
+            throw errors::MWSMessageException{"Unknown symbol: " + gtt.source.content,global::get_line()};
         }
         else {
             std::cout << gtt.to_string() << "\n";
@@ -289,7 +292,7 @@ static std::vector<Command> commandlist = {
         else if(to_iterate.type == General_type::STRING) {
             for(size_t i = 0; i < to_iterate.to_variable().storage.string.content.size(); ++i) {
                 ++global::in_loop;
-                auto ret = run_text(comp,false,false,-1,{{var_name,to_iterate.to_variable().storage.string.content[i]}},"",true);
+                auto ret = run_text(comp,false,false,-1,{{var_name,Token(std::string(1,to_iterate.to_variable().storage.string.content[i]))}},"",true);
                 --global::in_loop;
                 if(global::runner_should_return != 0) {
                     return ret;
@@ -493,12 +496,13 @@ static std::vector<Command> commandlist = {
         
         if(!std::filesystem::exists(pth)) {
             pth2 = pth.string() + ".mws";
-        }
-        if(!std::filesystem::exists(pth2)) {
-            throw errors::MWSMessageException{"Trying to import unknown file: \"" + pth.string() + "\"",global::get_line()};
+            if(!std::filesystem::exists(pth2)) {
+                throw errors::MWSMessageException{"Trying to import unknown file: \"" + pth.string() + "\"",global::get_line()};
+            }
+            return run_file(pth2,true,false,-1,{},pth2,false,true);
         }
 
-        return run_file(pth2,true,false,-1,{},pth2,false,true);
+        return run_file(pth,true,false,-1,{},pth,false,true);
     }},
 
     {"event",

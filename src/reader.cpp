@@ -351,7 +351,7 @@ std::vector<Line> MeowScript::lex_text(std::string source) {
     Token tmp_token;
     for(size_t i = 0; i < source.size(); ++i) {
         if(is_newline(source[i]) && !in_quote && in_braces.empty() && !until_eoc) {
-            if(tmp_token.content != "") {
+            if(tmp_token.content != "" || tmp_token.in_quotes) {
                 tmp_line.source.push_back(tmp_token);
             }
             ret.push_back(tmp_line);
@@ -382,8 +382,7 @@ std::vector<Line> MeowScript::lex_text(std::string source) {
         }
         else if(is_closing_brace(source[i]) && !in_quote && !until_eoc && !until_nl) {
             if(in_braces.empty() || !is_brace_pair(in_braces.top(),source[i])) {
-                std::cout << "Error in line: " << (tmp_line.line_count+2) << " -> Unexpected token: " << source[i] << "\n";
-                std::exit(1);
+                throw errors::MWSMessageException{"Unexpected token: " + source[i],global::get_line()};
             }
             tmp_token.content += source[i];
             in_braces.pop();
@@ -396,6 +395,9 @@ std::vector<Line> MeowScript::lex_text(std::string source) {
                 }
                 else if(source[i-1] == '\\') {
                     tmp_token.content += '"';
+                }
+                else if(source[i+1] == 'n' && in_quote) {
+                    tmp_token.content += '\n';
                     ++i;
                 }
                 else {
@@ -407,14 +409,10 @@ std::vector<Line> MeowScript::lex_text(std::string source) {
             //}
         }
         else if(source[i] == '"' && !until_eoc && !until_nl && in_braces.empty()) {
-            /*else if(!tmp_token.in_quotes && tmp_token.content != "") {
-                std::cout << "Error in line: " << (tmp_line.line_count+2) << " -> Unexpected token: " << source[i] << "\n";
-                std::exit(1);
-            }*/
             if(in_quote) {
                 in_quote = false;
                 if(source.size()-1 != i && source[i+1] != '\t' && source[i+1] != ' ' && source[i+1] != ',' && source[i+1] != ';' && !is_newline(source[i+1]) && !is_valid_operator_char(source[i+1])) {
-                    std::cout << "Error in line: " << (tmp_line.line_count+2) << " -> Unexpected token: " << source[i] << "\n";
+                    throw errors::MWSMessageException{"Unexpected token: " + source[i],global::get_line()};
                     std::exit(1);
                 }
             }
@@ -434,10 +432,9 @@ std::vector<Line> MeowScript::lex_text(std::string source) {
             }
         }
         else if(is_valid_operator_char(source[i]) && !in_quote && in_braces.empty() && !until_eoc && !until_nl) {
-            if(tmp_token.content != "") {
+            if(tmp_token.content != "" || tmp_token.in_quotes) {
                 if(tmp_token.in_quotes && source[i-1] != '"') {
-                    std::cout << "Error in line: " << (tmp_line.line_count+2) << " -> Unexpected token: " << source[i] << "\n";
-                    std::exit(1);
+                    throw errors::MWSMessageException{"Unexpected token: " + source[i],global::get_line()};
                 }
                 tmp_line.source.push_back(tmp_token);
                 tmp_token.content = "";
@@ -448,7 +445,7 @@ std::vector<Line> MeowScript::lex_text(std::string source) {
         else if(source[i] == '#' && !in_quote) {
             if(source.size() != i+1 && source[i+1] == '#') {
                 if(until_eoc) {
-                    if(tmp_token.content != "") {
+                    if(tmp_token.content != "" || tmp_token.in_quotes) {
                         tmp_line.source.push_back(tmp_token);
                     }
                     ret.push_back(tmp_line);
@@ -481,6 +478,7 @@ std::vector<Line> MeowScript::lex_text(std::string source) {
     std::vector<Line> tm_ret;
     for(auto line : ret) {
         Line ln;
+        ln.line_count = line.line_count;
         for(size_t i = 0; i < line.source.size(); ++i) {
             if(line.source[i].in_quotes || line.source[i].content.size() != 1 || !is_valid_operator_char(line.source[i].content[0]) || ln.source.size() == 0) {
                 ln.source.push_back(line.source[i]);

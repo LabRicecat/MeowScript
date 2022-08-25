@@ -23,6 +23,10 @@ namespace global {
     inline int continue_loop = 0;
     inline std::stack<unsigned int> line_count;
     unsigned int get_line();
+
+    inline std::stack<std::tuple<unsigned int,std::string,std::string>> call_trace;
+    void add_trace(unsigned int line, std::string name,std::string file);
+    bool pop_trace();
 }
 
 MEOWSCRIPT_HEADER_END

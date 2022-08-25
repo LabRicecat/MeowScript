@@ -12,8 +12,7 @@ public:
                     car_String | car_PlaceHolderAble
                 },
                 [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
-                    std::string file = tools::check4placeholder(args[0]).to_variable().storage.string;
-
+                    std::string file = global::include_path.top().parent_path().string() + MEOWSCRIPT_DIR_SL + tools::check4placeholder(args[0]).to_variable().storage.string.content;
                     std::string content = read(file);
 
                     GeneralTypeToken ret;
@@ -35,7 +34,7 @@ public:
                     if(line_num < 1) {
                         throw errors::MWSMessageException{"Line index must be grater than zero! (" + std::to_string(line_num) + ")",global::get_line()};
                     }
-                    file = tools::check4placeholder(args[0]).to_variable().storage.string;
+                    file = global::include_path.top().parent_path().string() + MEOWSCRIPT_DIR_SL + tools::check4placeholder(args[0]).to_variable().storage.string.content;
 
                     std::string content = read(file);
 
@@ -70,7 +69,7 @@ public:
                     car_String | car_PlaceHolderAble
                 },
                 [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
-                    std::string file = tools::check4placeholder(args[0]).to_variable().storage.string;
+                    std::string file = global::include_path.top().parent_path().string() + MEOWSCRIPT_DIR_SL + tools::check4placeholder(args[0]).to_variable().storage.string.content;
                     return std::filesystem::exists(file);
                 }
             }
@@ -80,7 +79,7 @@ public:
                     car_String | car_PlaceHolderAble
                 },
                 [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
-                    std::string file = tools::check4placeholder(args[0]).to_variable().storage.string;
+                    std::string file = global::include_path.top().parent_path().string() + MEOWSCRIPT_DIR_SL + tools::check4placeholder(args[0]).to_variable().storage.string.content;
                     return std::filesystem::is_directory(file);
                 }
             }
@@ -90,12 +89,46 @@ public:
                     car_String | car_PlaceHolderAble
                 },
                 [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
-                    std::string file = tools::check4placeholder(args[0]).to_variable().storage.string;
+                    std::string file = global::include_path.top().parent_path().string() + MEOWSCRIPT_DIR_SL + tools::check4placeholder(args[0]).to_variable().storage.string.content;
                     GeneralTypeToken ret;
                     ret.type = General_type::STRING;
                     ret.source.content = std::filesystem::path(file).extension().string();
                     ret.source.in_quotes = true;
                     return ret;
+                }
+            }
+        ).add_command(
+            {"write",
+                {
+                    car_String | car_PlaceHolderAble,
+                    car_String | car_PlaceHolderAble,
+                },
+                [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+                    std::string file = global::include_path.top().parent_path().string() + MEOWSCRIPT_DIR_SL + tools::check4placeholder(args[0]).to_variable().storage.string.content;
+                    std::string to_write = tools::check4placeholder(args[0]).to_variable().storage.string.content;
+
+                    std::ofstream off(file,std::ios::trunc);
+                    off.close();
+                    off.open(file,std::ios::app);
+                    off << to_write;
+                    off.close();
+                    return general_null;
+                }
+            }
+        ).add_command(
+            {"append",
+                {
+                    car_String | car_PlaceHolderAble,
+                    car_String | car_PlaceHolderAble,
+                },
+                [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+                    std::string file = global::include_path.top().parent_path().string() + MEOWSCRIPT_DIR_SL + tools::check4placeholder(args[0]).to_variable().storage.string.content;
+                    std::string to_write = tools::check4placeholder(args[0]).to_variable().storage.string.content;
+
+                    std::ofstream off(file,std::ios::app);
+                    off << to_write;
+                    off.close();
+                    return general_null;
                 }
             }
         );

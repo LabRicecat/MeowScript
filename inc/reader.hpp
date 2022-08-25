@@ -18,6 +18,7 @@ std::string read(std::string path);
 struct Token {
     bool in_quotes = false;
     std::string content;
+    unsigned int line = 0;
 
     operator std::string() {
         return content;

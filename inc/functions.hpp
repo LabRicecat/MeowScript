@@ -6,6 +6,7 @@
 #include "errors.hpp"
 
 #include <map>
+#include <tuple>
 
 MEOWSCRIPT_HEADER_BEGIN
 

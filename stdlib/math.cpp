@@ -150,7 +150,20 @@ public:
                 }
                 return std::abs(v.to_variable().storage.number);
             }}
+        ).add_command(
+            {"log10",
+            {
+                car_Number | car_PlaceHolderAble
+            },
+            [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+                auto v = tools::check4placeholder(args[0]);
+                if(v.type != General_type::NUMBER) {
+                    throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\t- But got: " + general_t2token(v.type).content,global::get_line()};
+                }
+                return std::log10(v.to_variable().storage.number);
+            }}
         );
+        
         math.enabled = false;
         add_module(math);
     }

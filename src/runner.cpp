@@ -36,6 +36,7 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
         identf_line.push_back(get_type(lines[i].source[0]));
 
         std::string name = lines[i].source[0];
+        global::add_trace(lines[i].line_count,name,global::include_path.top());
 
         if(identf_line.front() == General_type::COMMAND) {
             Command* command = get_command(name);
@@ -256,6 +257,8 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
             std::string err = "Invalid start of line!\n\t- Expected: [Command,Function,Module,String,List]\n\t- But got: " + general_t2token(identf_line.front()).content + " (" + lines[i].source[0].content + ")\n"; 
             throw errors::MWSMessageException{err,global::get_line()};
         }
+
+        global::pop_trace();
 
         if(global::runner_should_return != 0) {
             if(!pass_return_down) {

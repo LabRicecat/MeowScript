@@ -111,7 +111,7 @@ std::tuple<std::vector<std::string>,std::vector<Variable::Type>> MeowScript::too
 
     for(auto i : arguments) {
         for(size_t j = 0; j < i.size(); ++j) {
-            if(i[j].content == "") {
+            if(i[j].content == "" && !i[j].in_quotes) {
                 i.erase(i.begin()+j);
                 --j;
             }
