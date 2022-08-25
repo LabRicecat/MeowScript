@@ -19,7 +19,7 @@
 # define MEOWSCRIPT_USE_LINUX
 # define MEOWSCRIPT_SHARED_OBJECT_EXT ".so"
 # define MEOWSCRIPT_OS_NAME "Linux"
-#elif defined(_WIN32) || defined(__MINGW32__)
+#elif defined(_WIN32) || defined(__MINGW32__) || defined(__MINGW64__)
 # define MEOWSCRIPT_DIR_SL "\\"
 # define MEOWSCRIPT_USE_WINDOWS
 # define MEOWSCRIPT_SHARED_OBJECT_EXT ".dll"
