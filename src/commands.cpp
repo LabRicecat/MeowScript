@@ -193,14 +193,12 @@ static std::vector<Command> commandlist = {
 
         if(res.storage.number == 1 && !current_scope()->last_if_result) {
             auto ret = run_text(args[1].source.content,false,false);
+            current_scope()->last_if_result = true;
             if(ret.type != General_type::VOID && ret.type != General_type::UNKNOWN) {
                 ++global::runner_should_return;
                 current_scope()->last_if_result = (res.storage.number == 1);
                 return ret;
             }
-        }
-        else {
-            current_scope()->last_if_result = true;
         }
         return general_null;
     }},
@@ -227,7 +225,7 @@ static std::vector<Command> commandlist = {
             car_Name | car_Module
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
-        if(args[0].type == General_type::MODULE && is_loaded_module(args[0].to_string()) && !get_module(args[0].to_string())->enabled) {
+        if(args[0].type == General_type::MODULE && is_loaded_module(args[0].to_string())) {
             get_module(args[0].to_string())->enabled = true;
         }
         else if(is_loadable_module(args[0].to_string())) {
@@ -491,7 +489,8 @@ static std::vector<Command> commandlist = {
             car_String,
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
-        std::filesystem::path pth = global::include_path.top().remove_filename().string() + args[0].source.content;
+        std::filesystem::path pth = global::include_path.top();
+        pth = pth.remove_filename().string() + args[0].source.content;
         std::filesystem::path pth2;
         
         if(!std::filesystem::exists(pth)) {
@@ -625,6 +624,7 @@ static std::vector<Command> commandlist = {
         global::events[args[0].source.content].listeners.push_back(fun);
         return general_null;
     }},
+
 };
 
 std::vector<Command>* MeowScript::get_command_list() {

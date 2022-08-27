@@ -387,7 +387,7 @@ std::vector<Line> MeowScript::lex_text(std::string source) {
             tmp_token.content += source[i];
             in_braces.pop();
         }
-        else if(source[i] == '\\') {
+        else if(source[i] == '\\' && in_braces.empty()) {
             if(i != source.size()-1) {
                 if(source[i+1] == '"') {
                     tmp_token.content += '"';

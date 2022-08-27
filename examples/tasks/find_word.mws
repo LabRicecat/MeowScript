@@ -1,0 +1,62 @@
+using filesystem
+using os
+
+func find_words(file :: String, search :: String)->List {
+    new tmp ""
+    new line 1
+    new found_l []
+
+    new content {filesystem.read file}
+    if(content == "") {
+        print "The file is empty!"
+        os.exit(0)
+    }
+
+    for i in content {
+        if(i == "\n") {
+            set tmp ""
+            set line (line+1)
+        }
+        else {
+            set tmp (tmp + i)
+
+            if({tmp.length()} > {search.length()}) {
+                tmp.pop_front();
+            }
+            if(tmp == search) {
+                found_l.push_back(line)
+            }
+        }
+    }
+
+    return found_l
+}
+
+func main()->Void {
+    new file ""
+    new search ""
+
+    set file {input("The file to read: ")}
+    if({filesystem.exists file} == 0) {
+        print "No such file!"
+        os.exit(0)
+    }
+    set search {input("The sequence to search for: ")}
+    if(search == "") {
+        print "Please enter a valid sequence!"
+        os.exit(0)
+    }
+
+    new found {find_words(file,search)}
+
+    if({found.length()} == 0) {
+        print "\nThe given sequence was not found in the file!"
+        os.exit(0)
+    }
+    else {
+        print "\nThe sequence was found in the lines:"
+        print found
+    }
+}
+
+main()

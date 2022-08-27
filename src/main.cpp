@@ -81,6 +81,7 @@ int main(int argc, char** argv) {
         }
         try {
             std::filesystem::path from = std::filesystem::path(std::string(argv[1]));
+            MeowScript::global::origin_file = from;
             MeowScript::run_file(std::string(argv[1]),true,false,-1,{},from);
         }
         catch(MeowScript::errors::MWSMessageException& err) {

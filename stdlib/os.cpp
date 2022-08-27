@@ -136,9 +136,21 @@ public:
             [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
                 argument_list alist = tools::parse_argument_list(args[0]);
                 if(alist.size() != 0) {
-                    throw errors::MWSMessageException{"Too many/few arguments for command: name\n\t- Expected: 0\n\t- But got: " + std::to_string(alist.size()) ,global::get_line()};
+                    throw errors::MWSMessageException{"Too many/few arguments for command: version\n\t- Expected: 0\n\t- But got: " + std::to_string(alist.size()) ,global::get_line()};
                 }
                 return MEOWSCRIPT_VERSION_STR;
+            }}
+        ).add_command(
+            {"origin_file",
+            {
+                car_ArgumentList
+            },
+            [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+                argument_list alist = tools::parse_argument_list(args[0]);
+                if(alist.size() != 0) {
+                    throw errors::MWSMessageException{"Too many/few arguments for command: origin_file\n\t- Expected: 0\n\t- But got: " + std::to_string(alist.size()) ,global::get_line()};
+                }
+                return global::origin_file == global::include_path.top();
             }}
         );
         os.enabled = false;

@@ -1,0 +1,87 @@
+using os
+using math
+
+event public error(message :: String)
+
+func error_check(a :: String, b :: String)->Void {
+    if(a == "") {
+        occur error("No left number was given!")
+    }
+    if(b == "") {
+        occur error("No right number was given!")
+    }
+    if({typeof {number(a)}} == "Void") {
+        occur error("Expected a number as left!")
+    }
+    if({typeof {number(b)}} == "Void") {
+        occur error("Expected a number as right!")
+    }
+}
+
+func calc(inp :: String)->Number {
+    new num1_s ""
+    new num2_s ""
+    new op ""
+
+    for i in inp {
+        if(i == "+" || i == "-" || i == "/" || i == "*" || i == "^") {
+            if(op != "") {
+                occur error("Two operators found!")
+            }
+            set op i
+        }
+        elif(i == " ") {
+            # nothing
+        }
+        elif(op == "") {
+            set num1_s (num1_s + i)
+        }
+        else {
+            set num2_s (num2_s + i)
+        }
+    }
+    error_check(num1_s,num2_s)
+    new num1 {number(num1_s)}
+    new num2 {number(num2_s)}
+
+    if(op == "+") {
+        return (num1 + num2)
+    }
+    elif(op == "-") {
+        return (num1 - num2)
+    }
+    elif(op == "*") {
+        return (num1 * num2)
+    }
+    elif(op == "^") {
+        return (num1 ^ num2)
+    }
+    elif(op == "/") {
+        if(num2 == 0) {
+            occur error("Can't devide by 0!")
+        }
+        return (num1 / num2)
+    }
+    return 0
+}
+
+listen error(message) {
+    print "An error occured:"
+    print message
+    os.exit(0)
+}
+
+func main()->Void {
+    new inp ""
+    print "MeowScript calculator!"
+    print "Type \"exit\" to quit!\n"
+    while(1) {
+        set inp {input(">")}
+        if(inp == "exit") {
+            break;
+        }
+        print ("< " + {string({calc(inp)})})
+    }
+}
+
+main()

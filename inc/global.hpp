@@ -27,6 +27,8 @@ namespace global {
     inline std::stack<std::tuple<unsigned int,std::string,std::string>> call_trace;
     void add_trace(unsigned int line, std::string name,std::string file);
     bool pop_trace();
+
+    inline std::string origin_file = "";
 }
 
 MEOWSCRIPT_HEADER_END
