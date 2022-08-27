@@ -44,6 +44,10 @@ public:
     bool set(std::string str);
     bool set(List list);
     bool set(long double num);
+
+    bool operator==(Variable v) {
+        return this->type == v.type && this->to_string() == v.to_string();
+    }
 };
 
 General_type var_t2general_t(Variable::Type type);

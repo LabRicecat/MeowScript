@@ -84,4 +84,6 @@ func main()->Void {
     }
 }
 
-main()
+if({os.main_file()}) {
+    main()
+}

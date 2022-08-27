@@ -448,6 +448,36 @@ std::vector<Method<List>> list_method_list = {
         self->elements.push_back(elem.to_variable());
         return general_null;
     }},
+    {"has",
+    {
+        car_ArgumentList,
+    },
+    [](std::vector<GeneralTypeToken> args, List* self)->GeneralTypeToken {
+        return get_list_method("count")->run(args,self).to_variable().storage.number != 0;
+    }},
+    {"count",
+    {
+        car_ArgumentList,
+    },
+    [](std::vector<GeneralTypeToken> args, List* self)->GeneralTypeToken {
+        auto alist = tools::parse_argument_list(args[0]);
+        if(alist.size() != 1) {
+            throw errors::MWSMessageException{"Too many/few arguments for list method!\n\t- Expected: 1\n\t- But got: " + std::to_string(alist.size()),global::get_line()};
+        }
+        auto elem = tools::check4placeholder(alist[0]);
+        if(!is_valid_var_t(general_t2token(elem.type))) {
+            throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: [Number,String,List]\n\tBut got: " + general_t2token(elem.type).content,global::get_line()};
+        }
+        auto f = elem.to_variable();
+        size_t found = 0;
+        for(auto i : self->elements) {
+            if(i == f) {
+                ++found;
+            }
+        }
+        return found;
+    }},
+
     {"sort",
     {
         car_ArgumentList,
@@ -535,17 +565,8 @@ std::vector<Method<List>> list_method_list = {
         car_ArgumentList,
     },
     [](std::vector<GeneralTypeToken> args, List* self)->GeneralTypeToken {
-        auto alist = tools::parse_argument_list(args[0]);
-        if(alist.size() != 0) {
-            throw errors::MWSMessageException{"Too many/few arguments for list method!\n\t- Expected: 1\n\t- But got: " + std::to_string(alist.size()),global::get_line()};
-        }
-        
         List n_list = *self;
-        GeneralTypeToken arg;
-        arg.type = General_type::ARGUMENTLIST;
-        arg.source.content = "()";
-        get_list_method("sort")->run(argument_list({arg}),&n_list);
-
+        get_list_method("sort")->run(args,&n_list);
         return n_list;
     }},
 };
@@ -735,6 +756,49 @@ std::vector<Method<Token>> string_method_list = {
         }
         self->content += elem.source.content;
         return general_null;
+    }},
+    {"has",
+    {
+        car_ArgumentList,
+    },
+    [](std::vector<GeneralTypeToken> args, Token* self)->GeneralTypeToken {
+        auto alist = tools::parse_argument_list(args[0]);
+        if(alist.size() != 1) {
+            throw errors::MWSMessageException{"Too many/few arguments for string method!\n\t- Expected: 1\n\t- But got: " + std::to_string(alist.size()),global::get_line()};
+        }
+        auto elem = tools::check4placeholder(alist[0]);
+        if(elem.type != General_type::STRING) {
+            throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: String\n\tBut got: " + general_t2token(elem.type).content,global::get_line()};
+        }
+        if(elem.source.content.size() != 1) {
+            throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: String (size:1)\n\tBut got: String (size:" + std::to_string(elem.source.content.size()) + ")",global::get_line()};
+        }
+        return get_string_method("count")->run(argument_list({elem}),self).to_variable().storage.number != 0;
+    }},
+    {"count",
+    {
+        car_ArgumentList,
+    },
+    [](std::vector<GeneralTypeToken> args, Token* self)->GeneralTypeToken {
+        auto alist = tools::parse_argument_list(args[0]);
+        if(alist.size() != 1) {
+            throw errors::MWSMessageException{"Too many/few arguments for string method!\n\t- Expected: 1\n\t- But got: " + std::to_string(alist.size()),global::get_line()};
+        }
+        auto elem = tools::check4placeholder(alist[0]);
+        if(elem.type != General_type::STRING) {
+            throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: String\n\tBut got: " + general_t2token(elem.type).content,global::get_line()};
+        }
+        if(elem.source.content.size() != 1) {
+            throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: String (size:1)\n\tBut got: String (size:" + std::to_string(elem.source.content.size()) + ")",global::get_line()};
+        }
+        auto f = elem.source.content[0];
+        size_t found = 0;
+        for(auto i : self->content) {
+            if(i == f) {
+                ++found;
+            }
+        }
+        return found;
     }},
 };
 
