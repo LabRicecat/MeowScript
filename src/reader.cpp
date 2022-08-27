@@ -393,8 +393,17 @@ std::vector<Line> MeowScript::lex_text(std::string source) {
                     tmp_token.content += '"';
                     ++i;
                 }
-                else if(source[i-1] == '\\') {
-                    tmp_token.content += '"';
+                else if(source[i+1] == '\\') {
+                    tmp_token.content += '\\';
+                    ++i;
+                }
+                else if(source[i+1] == 't') {
+                    tmp_token.content += "\t";
+                    ++i;
+                }
+                else if(source[i+1] == 'r') {
+                    tmp_token.content += "\r";
+                    ++i;
                 }
                 else if(source[i+1] == 'n' && in_quote) {
                     tmp_token.content += '\n';

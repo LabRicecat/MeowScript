@@ -6,14 +6,26 @@
 #ifdef MEOWSCIPT_USE_WINDOWS
 #include <windows.h>
 
-void sleep_(int milliseconds) {
+void mw_sleep(int milliseconds) {
     Sleep(milliseconds);
 }
-#elif defined(MEOWSCRIPT_USE_LINUX)
 
-void sleep_(int milliseconds) {
+void mw_clear() {
+    system("cls");
+}
+#elif defined(MEOWSCRIPT_USE_LINUX)
+#include <stdlib.h>
+
+void mw_sleep(int milliseconds) {
     std::this_thread::sleep_for(std::chrono::milliseconds(milliseconds));
 }
+
+void mw_clear() {
+    system("clear");
+}
+#else
+void mw_sleep(int milliseconds) {}
+void mw_clear() {}
 #endif
 
 MEOWSCRIPT_MODULE
@@ -96,7 +108,7 @@ public:
                     throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\t- But got: " + general_t2token(alist[0].type).content,global::get_line()};
                 }
                 
-                sleep_(alist[0].to_variable().storage.number);
+                mw_sleep(alist[0].to_variable().storage.number);
                 return general_null;
             }}
         ).add_command(
@@ -151,6 +163,19 @@ public:
                     throw errors::MWSMessageException{"Too many/few arguments for command: origin_file\n\t- Expected: 0\n\t- But got: " + std::to_string(alist.size()) ,global::get_line()};
                 }
                 return global::origin_file == global::include_path.top();
+            }}
+        ).add_command(
+            {"clear",
+            {
+                car_ArgumentList
+            },
+            [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+                argument_list alist = tools::parse_argument_list(args[0]);
+                if(alist.size() != 0) {
+                    throw errors::MWSMessageException{"Too many/few arguments for command: clear\n\t- Expected: 0\n\t- But got: " + std::to_string(alist.size()) ,global::get_line()};
+                }
+                mw_clear();
+                return general_null;
             }}
         );
         os.enabled = false;
