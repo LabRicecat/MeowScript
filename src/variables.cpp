@@ -8,6 +8,8 @@
 #include "../inc/modules.hpp"
 #include "../inc/scopes.hpp"
 
+#include <algorithm>
+
 MEOWSCRIPT_SOURCE_FILE
 
 Variable::Type MeowScript::general_t2var_t(General_type type) {
@@ -445,6 +447,106 @@ std::vector<Method<List>> list_method_list = {
         }
         self->elements.push_back(elem.to_variable());
         return general_null;
+    }},
+    {"sort",
+    {
+        car_ArgumentList,
+    },
+    [](std::vector<GeneralTypeToken> args, List* self)->GeneralTypeToken {
+        auto alist = tools::parse_argument_list(args[0]);
+        if(alist.size() != 0) {
+            throw errors::MWSMessageException{"Too many/few arguments for list method!\n\t- Expected: 0\n\t- But got: " + std::to_string(alist.size()),global::get_line()};
+        }
+        
+        List nums;
+        List strings;
+        List lists;
+        for(size_t i = 0; i < self->elements.size(); ++i) {
+            if(self->elements[i].type == Variable::Type::Number) {
+                if(nums.elements.empty()) {
+                    nums.elements.push_back(self->elements[i]);
+                }
+                else {
+                    bool f = false;
+                    for(size_t j = 0; j < nums.elements.size(); ++j) {
+                        if(nums.elements[j].storage.number <= self->elements[i].storage.number) {
+                            nums.elements.insert(nums.elements.begin()+j,self->elements[i]);
+                            f = true;
+                            break;
+                        }
+                    }
+                    if(!f) {
+                        nums.elements.push_back(self->elements[i]);
+                    }
+                }
+            }
+            else if(self->elements[i].type == Variable::Type::String) {
+                if(strings.elements.empty()) {
+                    strings.elements.push_back(self->elements[i]);
+                }
+                else {
+                    bool f = false;
+                    for(size_t j = 0; j < strings.elements.size(); ++j) {
+                        if(strings.elements[j].storage.string <= self->elements[i].storage.string) {
+                            strings.elements.insert(strings.elements.begin()+j,self->elements[i]);
+                            f = true;
+                            break;
+                        }
+                    }
+                    if(!f) {
+                        strings.elements.push_back(self->elements[i]);
+                    }
+                }
+            }
+            else if(self->elements[i].type == Variable::Type::List) {
+                if(lists.elements.empty()) {
+                    lists.elements.push_back(self->elements[i]);
+                }
+                else {
+                    bool f = false;
+                    for(size_t j = 0; j < strings.elements.size(); ++j) {
+                        if(lists.elements[j].storage.list.elements.size() <= self->elements[i].storage.list.elements.size()) {
+                            lists.elements.insert(lists.elements.begin()+j,self->elements[i]);
+                            f = true;
+                            break;
+                        }
+                    }
+                    if(!f) {
+                        lists.elements.push_back(self->elements[i]);
+                    }
+                }
+            }
+        }
+
+        self->elements = {};
+        for(int i = nums.elements.size()-1; i != -1; --i) {
+            self->elements.push_back(nums.elements[i]);
+        }
+        for(int i = strings.elements.size()-1; i != -1; --i) {
+            self->elements.push_back(strings.elements[i]);
+        }
+        for(int i = lists.elements.size()-1; i != -1; --i) {
+            self->elements.push_back(lists.elements[i]);
+        }
+        return general_null;
+    }},
+    {"sorted",
+    {
+        car_ArgumentList,
+    },
+    [](std::vector<GeneralTypeToken> args, List* self)->GeneralTypeToken {
+        auto alist = tools::parse_argument_list(args[0]);
+        if(alist.size() != 0) {
+            throw errors::MWSMessageException{"Too many/few arguments for list method!\n\t- Expected: 1\n\t- But got: " + std::to_string(alist.size()),global::get_line()};
+        }
+        
+        List n_list = *self;
+        GeneralTypeToken arg;
+        arg.type = General_type::ARGUMENTLIST;
+        arg.source.content = "()";
+        get_list_method("sort")->run(argument_list({arg}),&n_list);
+
+        return n_list;
     }},
 };
 

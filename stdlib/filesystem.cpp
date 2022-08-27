@@ -105,7 +105,7 @@ public:
                 },
                 [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
                     std::string file = global::include_path.top().parent_path().string() + MEOWSCRIPT_DIR_SL + tools::check4placeholder(args[0]).to_variable().storage.string.content;
-                    std::string to_write = tools::check4placeholder(args[0]).to_variable().storage.string.content;
+                    std::string to_write = tools::check4placeholder(args[1]).to_variable().storage.string.content;
 
                     std::ofstream off(file,std::ios::trunc);
                     off.close();
@@ -123,7 +123,7 @@ public:
                 },
                 [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
                     std::string file = global::include_path.top().parent_path().string() + MEOWSCRIPT_DIR_SL + tools::check4placeholder(args[0]).to_variable().storage.string.content;
-                    std::string to_write = tools::check4placeholder(args[0]).to_variable().storage.string.content;
+                    std::string to_write = tools::check4placeholder(args[1]).to_variable().storage.string.content;
 
                     std::ofstream off(file,std::ios::app);
                     off << to_write;

@@ -36,6 +36,31 @@ struct Token {
         in_quotes = false;
         content = str;
     }
+
+    bool operator>(Token tk) {
+        return
+            tk.content.size() < content.size() ||
+            !(tk.content.size() > content.size()) ||
+            [=]()->bool{
+                for(size_t i = 0; i < tk.content.size(); ++i) {
+                    if(tk.content[i] > content[i]) {
+                        return false;
+                    } 
+                }
+                return true;
+            }();
+    }
+
+    bool operator<(Token tk) {
+        return !operator>(tk);
+    }
+
+    bool operator<=(Token tk) {
+        return tk.content == content || operator<(tk);
+    }
+    bool operator>=(Token tk) {
+        return tk.content == content || operator>(tk);
+    }
 };
 
 struct Line {

@@ -128,6 +128,18 @@ public:
                 std::exit(alist[0].to_variable().storage.number);
                 return general_null;
             }}
+        ).add_command(
+            {"version",
+            {
+                car_ArgumentList
+            },
+            [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+                argument_list alist = tools::parse_argument_list(args[0]);
+                if(alist.size() != 0) {
+                    throw errors::MWSMessageException{"Too many/few arguments for command: name\n\t- Expected: 0\n\t- But got: " + std::to_string(alist.size()) ,global::get_line()};
+                }
+                return MEOWSCRIPT_VERSION_STR;
+            }}
         );
         os.enabled = false;
         add_module(os);
