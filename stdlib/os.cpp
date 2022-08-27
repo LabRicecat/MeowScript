@@ -162,7 +162,31 @@ public:
                 if(alist.size() != 0) {
                     throw errors::MWSMessageException{"Too many/few arguments for command: origin_file\n\t- Expected: 0\n\t- But got: " + std::to_string(alist.size()) ,global::get_line()};
                 }
-                return global::origin_file == global::include_path.top();
+                return global::origin_file;
+            }}
+        ).add_command(
+            {"main_file",
+            {
+                car_ArgumentList
+            },
+            [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+                argument_list alist = tools::parse_argument_list(args[0]);
+                if(alist.size() != 0) {
+                    throw errors::MWSMessageException{"Too many/few arguments for command: main_file\n\t- Expected: 0\n\t- But got: " + std::to_string(alist.size()) ,global::get_line()};
+                }
+                return global::origin_file == global::include_path.top().string();
+            }}
+        ).add_command(
+            {"file",
+            {
+                car_ArgumentList
+            },
+            [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+                argument_list alist = tools::parse_argument_list(args[0]);
+                if(alist.size() != 0) {
+                    throw errors::MWSMessageException{"Too many/few arguments for command: file\n\t- Expected: 0\n\t- But got: " + std::to_string(alist.size()) ,global::get_line()};
+                }
+                return global::include_path.top().string();
             }}
         ).add_command(
             {"clear",
