@@ -19,4 +19,4 @@ $ ./meow-script --help
 ```
 
 ## How to use
-Plase read the wiki [here]() to learn more about MeowScript.
+Plase read the wiki [here](https://github.com/SirWolfi/MeowScript/wiki) to learn more about MeowScript.
