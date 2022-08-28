@@ -374,7 +374,7 @@ std::vector<Method<List>> list_method_list = {
         }
         
         if(self->elements.size() == 0) {
-            throw errors::MWSMessageException{"Can't call method \"at\" a on empty list!",global::get_line()};
+            throw errors::MWSMessageException{"Can't call method \"insert\" a on empty list!",global::get_line()};
         }
         self->elements.insert(self->elements.begin()+index,value);
         return *self;
@@ -476,6 +476,49 @@ std::vector<Method<List>> list_method_list = {
             }
         }
         return found;
+    }},
+    {"empty",
+    {
+        car_ArgumentList,
+    },
+    [](std::vector<GeneralTypeToken> args, List* self)->GeneralTypeToken {
+        auto alist = tools::parse_argument_list(args[0]);
+        if(alist.size() != 0) {
+            throw errors::MWSMessageException{"Too many/few arguments for list method!\n\t- Expected: 0\n\t- But got: " + std::to_string(alist.size()),global::get_line()};
+        }
+        return self->elements.size() == 0;
+    }},
+    {"replace",
+    {
+        car_ArgumentList,
+    },
+    [](std::vector<GeneralTypeToken> args, List* self)->GeneralTypeToken {
+        auto alist = tools::parse_argument_list(args[0]);
+        if(alist.size() != 2) {
+            throw errors::MWSMessageException{"Too many/few arguments for list method!\n\t- Expected: 2\n\t- But got: " + std::to_string(alist.size()),global::get_line()};
+        }
+        auto idx = tools::check4placeholder(alist[0]);
+        if(idx.type != General_type::NUMBER) {
+            throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\tBut got: " + general_t2token(idx.type).content,global::get_line()};
+        }
+        int index = idx.to_variable().storage.number;
+        if(index < 0 || index >= self->elements.size()) {
+            throw errors::MWSMessageException{"Index is not allowed to be less than 0 or bigger than the total size.",global::get_line()};
+        }
+
+        Variable value;
+        try {
+            value = tools::check4placeholder(args[1]).to_variable();
+        }
+        catch(...) {
+            throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: [Number,String,List]\n\tBut got: " + general_t2token(args[1].type).content,global::get_line()};
+        }
+        
+        if(self->elements.size() == 0) {
+            throw errors::MWSMessageException{"Can't call method \"at\" a on empty list!",global::get_line()};
+        }
+        self->elements[index] = value;
+        return *self;
     }},
 
     {"sort",
@@ -800,6 +843,53 @@ std::vector<Method<Token>> string_method_list = {
         }
         return found;
     }},
+    {"empty",
+    {
+        car_ArgumentList,
+    },
+    [](std::vector<GeneralTypeToken> args, Token* self)->GeneralTypeToken {
+        auto alist = tools::parse_argument_list(args[0]);
+        if(alist.size() != 0) {
+            throw errors::MWSMessageException{"Too many/few arguments for list method!\n\t- Expected: 0\n\t- But got: " + std::to_string(alist.size()),global::get_line()};
+        }
+        return self->content.size() == 0;
+    }},
+    {"replace",
+    {
+        car_ArgumentList,
+    },
+    [](std::vector<GeneralTypeToken> args, Token* self)->GeneralTypeToken {
+        auto alist = tools::parse_argument_list(args[0]);
+        if(alist.size() != 2) {
+            throw errors::MWSMessageException{"Too many/few arguments for string method!\n\t- Expected: 2\n\t- But got: " + std::to_string(alist.size()),global::get_line()};
+        }
+        auto idx = tools::check4placeholder(alist[0]);
+        if(idx.type != General_type::NUMBER) {
+            throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\tBut got: " + general_t2token(idx.type).content,global::get_line()};
+        }
+        int index = idx.to_variable().storage.number;
+        if(index < 0 || index >= self->content.size()) {
+            throw errors::MWSMessageException{"Index is not allowed to be less than 0 or bigger than the total size.",global::get_line()};
+        }
+
+        Variable value;
+        try {
+            value = tools::check4placeholder(args[1]).to_variable();
+            if(value.type != Variable::Type::String) {
+                throw errors::MWSException{};
+            }
+        }
+        catch(...) {
+            throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: String\n\tBut got: " + general_t2token(args[1].type).content,global::get_line()};
+        }
+        
+        if(self->content.size() == 0) {
+            throw errors::MWSMessageException{"Can't call method \"replace\" a on empty list!",global::get_line()};
+        }
+        self->content = self->content.substr(0,index-1) + value.storage.string.content + self->content.substr(index,self->content.size()-1);
+        return *self;
+    }},
+
 };
 
 std::vector<Method<Token>>* MeowScript::get_string_method_list() {
