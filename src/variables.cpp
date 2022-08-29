@@ -890,6 +890,34 @@ std::vector<Method<Token>> string_method_list = {
         return *self;
     }},
 
+    {"to_upper",
+    {
+        car_ArgumentList,
+    },
+    [](std::vector<GeneralTypeToken> args, Token* self)->GeneralTypeToken {
+        auto alist = tools::parse_argument_list(args[0]);
+        if(alist.size() != 0) {
+            throw errors::MWSMessageException{"Too many/few arguments for string method!\n\t- Expected: 0\n\t- But got: " + std::to_string(alist.size()),global::get_line()};
+        }
+        for(auto& i : self->content) {
+            i = toupper(i);
+        }
+        return general_null;
+    }},
+    {"to_lower",
+    {
+        car_ArgumentList,
+    },
+    [](std::vector<GeneralTypeToken> args, Token* self)->GeneralTypeToken {
+        auto alist = tools::parse_argument_list(args[0]);
+        if(alist.size() != 0) {
+            throw errors::MWSMessageException{"Too many/few arguments for string method!\n\t- Expected: 0\n\t- But got: " + std::to_string(alist.size()),global::get_line()};
+        }
+        for(auto& i : self->content) {
+            i = tolower(i);
+        }
+        return general_null;
+    }},
 };
 
 std::vector<Method<Token>>* MeowScript::get_string_method_list() {

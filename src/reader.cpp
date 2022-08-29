@@ -382,7 +382,8 @@ std::vector<Line> MeowScript::lex_text(std::string source) {
         }
         else if(is_closing_brace(source[i]) && !in_quote && !until_eoc && !until_nl) {
             if(in_braces.empty() || !is_brace_pair(in_braces.top(),source[i])) {
-                throw errors::MWSMessageException{"Unexpected token: " + source[i],global::get_line()};
+                std::string err = "Unexpected token: " + std::string(1,source[i]);
+                throw errors::MWSMessageException{err,line_counter};
             }
             tmp_token.content += source[i];
             in_braces.pop();
@@ -421,8 +422,7 @@ std::vector<Line> MeowScript::lex_text(std::string source) {
             if(in_quote) {
                 in_quote = false;
                 if(source.size()-1 != i && source[i+1] != '\t' && source[i+1] != ' ' && source[i+1] != ',' && source[i+1] != ';' && !is_newline(source[i+1]) && !is_valid_operator_char(source[i+1])) {
-                    throw errors::MWSMessageException{"Unexpected token: " + source[i],global::get_line()};
-                    std::exit(1);
+                    throw errors::MWSMessageException{"Unexpected token: " + std::string(1,source[i]),line_counter};
                 }
             }
             else {
@@ -443,7 +443,7 @@ std::vector<Line> MeowScript::lex_text(std::string source) {
         else if(is_valid_operator_char(source[i]) && !in_quote && in_braces.empty() && !until_eoc && !until_nl) {
             if(tmp_token.content != "" || tmp_token.in_quotes) {
                 if(tmp_token.in_quotes && source[i-1] != '"') {
-                    throw errors::MWSMessageException{"Unexpected token: " + source[i],global::get_line()};
+                    throw errors::MWSMessageException{"Unexpected token: " + std::string(1,source[i]),line_counter};
                 }
                 tmp_line.source.push_back(tmp_token);
                 tmp_token.content = "";

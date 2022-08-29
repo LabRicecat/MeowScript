@@ -1,7 +1,16 @@
 using filesystem
 using os
 
-func find_words(file :: String, search :: String)->List {
+func matches(left :: String, right :: String, sensitivity)->Number {
+    if(sensitivity == 0) {
+        left.to_upper()
+        right.to_upper()
+    }
+
+    return (left == right)
+}
+
+func find_words(file :: String, search :: String, sensitivity :: Number)->List {
     new tmp ""
     new line 1
     new found_l []
@@ -23,7 +32,7 @@ func find_words(file :: String, search :: String)->List {
             if({tmp.length()} > {search.length()}) {
                 tmp.pop_front();
             }
-            if(tmp == search) {
+            if({matches(search,tmp,sensitivity)}) {
                 found_l.push_back(line)
             }
         }
@@ -35,6 +44,7 @@ func find_words(file :: String, search :: String)->List {
 func main()->Void {
     new file ""
     new search ""
+    set sensitivity ""
 
     set file {input("The file to read: ")}
     if({filesystem.exists file} == 0) {
@@ -47,7 +57,15 @@ func main()->Void {
         os.exit(0)
     }
 
-    new found {find_words(file,search)}
+    set sensitivity {input("Do you want case sensitivity? [Y,n]:")}
+    if(sensitivity == "" || sensitivity == "Y" || sensitivity == "y") {
+        set sensitivity 1
+    }
+    else {
+        set sensitivity 0
+    }
+
+    new found {find_words(file,search,sensitivity)}
 
     if({found.length()} == 0) {
         print "\nThe given sequence was not found in the file!"
