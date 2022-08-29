@@ -11,12 +11,21 @@ The requirements are:
 ## Installing
 Execute this commands in your shell:
 ```
+$ git clone https://github.com/SirWolfi/MeowScript.git
+$ cd MeowScript
 $ mkdir build
 $ cd build
 $ cmake ..
 $ make
-$ ./meow-script --help
+```
+If you use Windows, you can run the interpreter like this:
+```
+$ ./meow-script.exe --help
+```
+If you use Linux, use this:
+```
+$ ./meow-script.exe --help
 ```
 
 ## How to use
-Plase read the wiki [here](https://github.com/SirWolfi/MeowScript/wiki) to learn more about MeowScript.
+Please read the wiki [here](https://github.com/SirWolfi/MeowScript/wiki) to learn more about MeowScript.
