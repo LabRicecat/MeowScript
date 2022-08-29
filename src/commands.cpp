@@ -95,7 +95,11 @@ static std::vector<Command> commandlist = {
             car_Name
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
-        return GeneralTypeToken(*get_variable(args[0].source.content));
+        Variable* var = get_variable(args[0].source.content);
+        if(var == nullptr) {
+            throw errors::MWSMessageException{"Unknwon variable: " + args[0].source.content,global::get_line()};
+        }
+        return GeneralTypeToken(*var);
     }},
     {"return",
         {
