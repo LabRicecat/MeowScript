@@ -7,7 +7,7 @@ The requirements are:
 - CMake and Make
 - a  C++ compiler
 - Either Windows or Linux (Other systems not tested, but might work to some extend)
-- On Winodws:
+- On Winodws:  
 -- Msys2 and MinGW
 
 ## Installing
