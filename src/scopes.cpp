@@ -1,4 +1,5 @@
 #include "../inc/scopes.hpp"
+#include "../inc/global.hpp"
 
 MEOWSCRIPT_SOURCE_FILE
 
@@ -89,7 +90,10 @@ void MeowScript::set_variable(std::string name, Variable var) {
         new_variable(name,var);
         return;
     }
-    *vptr = var; // TODO: fixed types
+    if(vptr->constant) {
+        throw errors::MWSMessageException{"Const variable \"" + name + "\" can not get a new value! (" + var.to_string() + ")",global::get_line()};
+    }
+    *vptr = var;
 }
 
 void MeowScript::new_variable(std::string name, Variable var) {

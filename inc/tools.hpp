@@ -31,6 +31,8 @@ namespace tools {
     Token remove_unneeded_chars(Token token);
 
     Token remove_uness_decs(Token num, bool to_int);
+
+    Token until_newline(std::vector<Token> tks);
 }
 
 MEOWSCRIPT_HEADER_END

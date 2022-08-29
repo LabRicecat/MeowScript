@@ -247,3 +247,18 @@ Token MeowScript::tools::remove_uness_decs(Token num, bool to_int) {
 
     return num;
 }
+
+Token MeowScript::tools::until_newline(std::vector<Token> tks) {
+    Token ret;
+    for(auto i : tks) {
+        for(auto j : i.content) {
+            if(j == '\n') {
+                return ret;
+            }
+            ret.content += j;
+        }
+        ret.content += " ";
+    }
+    ret.content.pop_back();
+    return ret;
+}

@@ -18,6 +18,8 @@ struct Scope {
     unsigned int index;
     bool freed = false;
     bool last_if_result = true;
+
+    unsigned int current_line = 1;
 };
 
 inline std::vector<Scope> scopes;

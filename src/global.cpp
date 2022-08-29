@@ -1,12 +1,20 @@
 #include "../inc/global.hpp"
+#include "../inc/scopes.hpp"
 
 MEOWSCRIPT_SOURCE_FILE
 
 unsigned int MeowScript::global::get_line() {
-    if(global::line_count.empty()) {
-        return 0;
+    if(current_scope()->index == 0) {
+        return current_scope()->current_line;
     }
-    return global::line_count.top();
+    unsigned int line = 0;
+    unsigned int index = current_scope()->index;
+    while(index != 0) {
+        line += scopes[index].current_line;
+        index = scopes[index].parent;
+    }
+    // line += scopes[index].current_line;
+    return line;
 }
 
 void MeowScript::global::add_trace(unsigned int line, std::string name,std::string file) {

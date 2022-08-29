@@ -70,6 +70,17 @@ static std::vector<Command> commandlist = {
         new_variable(args[0].source.content,tools::check4placeholder(args[1]).to_variable());
         return general_null;
     }},
+    {"const",
+        {
+            car_Name,
+            car_Number | car_String | car_List | car_PlaceHolderAble,
+        },
+    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        Variable v = tools::check4placeholder(args[1]).to_variable();
+        v.constant = true;
+        new_variable(args[0].source.content,tools::check4placeholder(args[1]).to_variable());
+        return general_null;
+    }},
     {"set",
         {
             car_Name,

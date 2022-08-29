@@ -23,11 +23,15 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
     else {
         load_scope(load_idx,external_vars);
     }
+
+    unsigned int ln = current_scope()->current_line;
+
     global::line_count.push(0);
 
     for(size_t i = 0; i < lines.size(); ++i) {
         GeneralTypeToken ret;
         global::line_count.top() = lines[i].line_count;
+        current_scope()->current_line = lines[i].line_count;
         if(lines[i].source.empty()) {
             continue;
         }
@@ -36,7 +40,7 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
         identf_line.push_back(get_type(lines[i].source[0]));
 
         std::string name = lines[i].source[0];
-        global::add_trace(lines[i].line_count,name,global::include_path.top());
+        global::add_trace(global::get_line(),tools::until_newline(lines[i].source),global::include_path.top());
 
         if(identf_line.front() == General_type::COMMAND) {
             Command* command = get_command(name);
@@ -271,6 +275,9 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
                 pop_scope(save_scope);
             }
             global::line_count.pop();
+            if(same_scope) {
+                current_scope()->current_line = ln;
+            }
             return ret;
         }
         else if(global::runner_should_exit != 0) {
@@ -281,6 +288,9 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
                 pop_scope(save_scope);
             }
             global::line_count.pop();
+            if(same_scope) {
+                current_scope()->current_line = ln;
+            }
             return GeneralTypeToken();
         }
         else if(global::break_loop != 0 || global::continue_loop != 0) {
@@ -291,6 +301,9 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
                 pop_scope(save_scope);
             }
             global::line_count.pop();
+            if(same_scope) {
+                current_scope()->current_line = ln;
+            }
             return GeneralTypeToken();
         }
         else if(global::in_compound != 0 && i+1 == lines.size()) {
@@ -301,6 +314,9 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
                 pop_scope(save_scope);
             }
             global::line_count.pop();
+            if(same_scope) {
+                current_scope()->current_line = ln;
+            }
             return ret;
         }
         else if(ret.type != General_type::VOID && ret.type != General_type::UNKNOWN) {
@@ -315,6 +331,9 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
         pop_scope(save_scope);
     }
     global::line_count.pop();
+    if(same_scope) {
+        current_scope()->current_line = ln;
+    }
     return general_null;
 }
 
