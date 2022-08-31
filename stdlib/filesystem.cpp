@@ -33,7 +33,7 @@ public:
             {"get_line",
                 {
                     car_String | car_PlaceHolderAble,
-                    car_Number
+                    car_Number | car_PlaceHolderAble
                 },
                 [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
                     auto fname = tools::check4placeholder(args[0]);
@@ -44,8 +44,11 @@ public:
                     if(!std::filesystem::exists(file)) {
                         throw errors::MWSMessageException{"File does not exist! (" + file + ")",global::get_line()};
                     }
-
-                    int line_num = args[0].to_variable().storage.number;
+                    auto line_n = tools::check4placeholder(args[1]);
+                    if(line_n.type != General_type::NUMBER) {
+                        throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\t- But got: " + general_t2token(line_n.type).content,global::get_line()};
+                    }
+                    int line_num = line_n.to_variable().storage.number;
                     if(line_num < 1) {
                         throw errors::MWSMessageException{"Line index must be grater than zero! (" + std::to_string(line_num) + ")",global::get_line()};
                     }
@@ -53,27 +56,22 @@ public:
 
                     std::vector<std::string> lines;
                     std::string tmp;
-                    for(size_t i = 0; i < content.size(); ++i) {
-                        if(is_newline(i)) {
+                    for(auto i : content) {
+                        if(i == '\n') {
                             lines.push_back(tmp);
                             tmp = "";
                         }
                         else {
-                            tmp += content[i];
-                        }
-
-                        if(line_num+1 == lines.size()) {
-                            return GeneralTypeToken("\"" + lines[line_num-1] + "\"");
+                            tmp += i;
                         }
                     }
                     if(tmp != "") {
                         lines.push_back(tmp);
                     }
-                    if(line_num == lines.size()) {
-                        return GeneralTypeToken("\"" + lines.back() + "\"");
+                    if(line_num > lines.size()) {
+                        throw errors::MWSMessageException{"File does not have line: " + std::to_string(line_num),global::get_line()};
                     }
-                    throw errors::MWSMessageException{"File does not have line: " + std::to_string(line_num),global::get_line()};
-                    return general_null;
+                    return lines[line_num-1];
                 }
             }
         ).add_command(
@@ -161,9 +159,6 @@ public:
                         throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: String\n\t- But got: " + general_t2token(fname.type).content,global::get_line()};
                     }
                     std::string file = global::include_path.top().parent_path().string() + MEOWSCRIPT_DIR_SL + fname.source.content;
-                    if(!std::filesystem::exists(file)) {
-                        throw errors::MWSMessageException{"File does not exist! (" + file + ")",global::get_line()};
-                    }
                     Variable to_write = tools::check4placeholder(args[1]).to_variable();
                     if(to_write.type != Variable::Type::String && to_write.type != Variable::Type::Number && to_write.type != Variable::Type::List) {
                         throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: [String,Number,List]\n\t- But got: " + general_t2token(fname.type).content,global::get_line()};
@@ -193,9 +188,6 @@ public:
                         throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: String\n\t- But got: " + general_t2token(fname.type).content,global::get_line()};
                     }
                     std::string file = global::include_path.top().parent_path().string() + MEOWSCRIPT_DIR_SL + fname.source.content;
-                    if(!std::filesystem::exists(file)) {
-                        throw errors::MWSMessageException{"File does not exist! (" + file + ")",global::get_line()};
-                    }
                     Variable to_write = tools::check4placeholder(args[1]).to_variable();
                     if(to_write.type != Variable::Type::String && to_write.type != Variable::Type::Number && to_write.type != Variable::Type::List) {
                         throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: [String,Number,List]\n\t- But got: " + general_t2token(fname.type).content,global::get_line()};

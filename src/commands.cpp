@@ -390,7 +390,7 @@ static std::vector<Command> commandlist = {
         if(alist.size() == 1) {
             auto output = tools::check4placeholder(alist[0]);
             if(output.type != General_type::STRING) {
-                throw errors::MWSMessageException{"Wrong argument for argument!\n\t- Expected: String\n\t- But got: " + general_t2token(output.type).content,global::get_line()};
+                throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: String\n\t- But got: " + general_t2token(output.type).content,global::get_line()};
             }
             std::cout << output.source.content;
             std::cout.flush();
@@ -496,6 +496,28 @@ static std::vector<Command> commandlist = {
             default:
                 return general_null;
         }
+        return general_null;
+    }},
+    {"str2var",
+        {
+            car_ArgumentList
+        },
+    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        auto alist = tools::parse_argument_list(args[0]);
+        if(alist.size() != 1) {
+            throw errors::MWSMessageException{"Too many/few arguments for cast: str2var()",global::get_line()};
+        }
+        alist[0] = tools::check4placeholder(alist[0]);
+        if(alist[0].type != General_type::STRING) {
+            throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: String\n\t- But got: " + general_t2token(alist[0].type).content,global::get_line()};
+        }
+        try {
+            return make_variable(alist[0].source.content);
+        }
+        catch(errors::MWSMessageException& err) {
+            throw errors::MWSMessageException{"Invalid cast!\n\t- Can't cast string: \"" + alist[0].to_string() + "\" to a variable!",global::get_line()};
+        }
+
         return general_null;
     }},
 

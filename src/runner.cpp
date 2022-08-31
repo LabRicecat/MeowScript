@@ -70,12 +70,27 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
             ret = command->run(args);
         }
         else if(identf_line.front() == General_type::FUNCTION) {
+            bool shadow_return = false;
             for(size_t j = 1; j < lines[i].source.size(); ++j) {
                 identf_line.push_back(get_type(lines[i].source[j]));
             }
-            if(identf_line.size() != 2 || identf_line[1] != General_type::ARGUMENTLIST) {
-                std::string err = "Unexpected token after function call:\n\t- Expected: ARGUMENTLIST\n\t- But got: " + (identf_line.size() != 1 ? general_t2token(identf_line[1]).content : "VOID");
+            if(identf_line.size() > 3 || identf_line.size() < 2) {
+                throw errors::MWSMessageException{"Too many/few arguments for primitiv function call!\n- Call Sytax: name(<args>)[!]",global::get_line()};
+            }
+            if(identf_line[1] != General_type::ARGUMENTLIST) {
+                std::string err = "Unexpected token after function call:\n\t- Expected: Argumentlist\n\t- But got: " + (identf_line.size() != 1 ? general_t2token(identf_line[1]).content : "VOID");
                 throw errors::MWSMessageException{err,global::get_line()};
+            }
+            if(identf_line.size() == 3) {
+                if(identf_line[2] != General_type::OPERATOR) {
+                    std::string err = "Unexpected token after function call:\n\t- Expected: \"!\"\n\t- But got: " + general_t2token(identf_line[1]).content;
+                    throw errors::MWSMessageException{err,global::get_line()};
+                }
+                if(lines[i].source[2].content != "!") {
+                    std::string err = "Unexpected token after function call:\n\t- Expected: \"!\"\n\t- But got: " + lines[i].source[2].content;
+                    throw errors::MWSMessageException{err,global::get_line()};
+                }
+                shadow_return = true;
             }
 
             Function* fun = get_function(name);
@@ -116,6 +131,9 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
             }
             else if(fun->return_type != Variable::Type::VOID && fun->return_type != Variable::Type::ANY && var_t2general_t(fun->return_type) != ret.type) {
                 throw errors::MWSMessageException{"Invalid return type!\n\t- Expected: " + var_t2token(fun->return_type).content + "\n\t- But got: " + general_t2token(ret.type).content,global::get_line()};
+            }
+            if(shadow_return) {
+                ret = general_null;
             }
         }
         else if(identf_line.front() == General_type::MODULE) {
