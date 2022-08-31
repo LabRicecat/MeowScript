@@ -27,7 +27,7 @@ $ ./meow-script.exe --help
 ```
 If you use Linux, use this:
 ```
-$ ./meow-script.exe --help
+$ ./meow-script --help
 ```
 
 ## How to use
