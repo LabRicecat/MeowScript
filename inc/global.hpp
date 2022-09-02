@@ -6,10 +6,13 @@
 #include <map>
 #include <filesystem>
 #include <stack>
+#include <vector>
 
 namespace fs = std::filesystem;
 
 MEOWSCRIPT_HEADER_BEGIN
+
+struct Variable;
 
 namespace global {
     inline std::stack<fs::path> include_path;
@@ -23,6 +26,8 @@ namespace global {
     inline int continue_loop = 0;
     inline std::stack<unsigned int> line_count;
     unsigned int get_line();
+
+    inline std::vector<Variable> args;
 
     inline std::stack<std::tuple<unsigned int,std::string,std::string>> call_trace;
     void add_trace(unsigned int line, std::string name,std::string file);

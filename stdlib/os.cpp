@@ -201,6 +201,20 @@ public:
                 mw_clear();
                 return general_null;
             }}
+        ).add_command(
+            {"args",
+            {
+                car_ArgumentList
+            },
+            [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+                argument_list alist = tools::parse_argument_list(args[0]);
+                if(alist.size() != 0) {
+                    throw errors::MWSMessageException{"Too many/few arguments for command: args\n\t- Expected: 0\n\t- But got: " + std::to_string(alist.size()) ,global::get_line()};
+                }
+                List ret;
+                ret.elements = global::args;
+                return ret;
+            }}
         );
         os.enabled = false;
         add_module(os);

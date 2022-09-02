@@ -35,6 +35,15 @@ int main(int argc, char** argv) {
 
     std::string arg = std::string(argv[1]);
 
+    std::vector<std::string> args;
+    for(size_t i = 2; i < argc; ++i) {
+        args.push_back(std::string(argv[i]));
+    }
+
+    if(!MeowScript::check_paths()) {
+        MeowScript::make_paths();
+    }
+
     if(arg == "--help" || arg == "-h") {
         print_help();
         return 0;
@@ -71,6 +80,7 @@ int main(int argc, char** argv) {
         if(!MeowScript::check_paths()) {
             MeowScript::make_paths();
         }
+
         if(!std::filesystem::exists(std::string(argv[1]))) {
             std::cout << "No such file: \"" + std::string(argv[1]) + "\"\n";
             return 1;
@@ -80,6 +90,13 @@ int main(int argc, char** argv) {
             return 1;
         }
         try {
+            for(auto i : args) {
+                MeowScript::Variable var;
+                var.storage.string = i;
+                var.storage.string.in_quotes = true;
+                var.type = MeowScript::Variable::Type::String;
+                MeowScript::global::args.push_back(var);
+            }
             std::filesystem::path from = std::filesystem::path(std::string(argv[1]));
             MeowScript::global::origin_file = from;
             MeowScript::run_file(std::string(argv[1]),true,false,-1,{},from);
