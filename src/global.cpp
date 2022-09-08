@@ -28,3 +28,10 @@ bool MeowScript::global::pop_trace() {
     }
     return false;
 }
+
+fs::path MeowScript::global::include_parent_path() {
+    if(include_path.top().has_parent_path()) {
+        return include_path.top().parent_path().string() + std::string(MEOWSCRIPT_DIR_SL);
+    }
+    return "";
+}

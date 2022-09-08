@@ -17,7 +17,7 @@ public:
                 if(alist.size() != 2) {
                     throw errors::MWSMessageException{"Too many/few arguments for command: max\n\t- Expected: 2\n\t- But got: " + std::to_string(alist.size()) ,global::get_line()};
                 }
-                auto n1 = tools::check4placeholder(alist[1]);
+                auto n1 = tools::check4placeholder(alist[0]);
                 auto n2 = tools::check4placeholder(alist[1]);
 
                 if(n1.type != General_type::NUMBER) {
@@ -39,7 +39,7 @@ public:
                 if(alist.size() != 2) {
                     throw errors::MWSMessageException{"Too many/few arguments for command: max\n\t- Expected: 2\n\t- But got: " + std::to_string(alist.size()) ,global::get_line()};
                 }
-                auto n1 = tools::check4placeholder(alist[1]);
+                auto n1 = tools::check4placeholder(alist[0]);
                 auto n2 = tools::check4placeholder(alist[1]);
 
                 if(n1.type != General_type::NUMBER) {

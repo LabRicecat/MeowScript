@@ -136,6 +136,22 @@ inline std::unordered_map<std::string,std::vector<Operator>> operators = {
                 }
             },
         }},
+        {"<=", {
+            {
+                Variable::Type::Number, Variable::Type::Number, 0,
+                [](Variable left, Variable right)->Variable {
+                    return left.storage.number <= right.storage.number;
+                }
+            },
+        }},
+        {">=", {
+            {
+                Variable::Type::Number, Variable::Type::Number, 0,
+                [](Variable left, Variable right)->Variable {
+                    return left.storage.number >= right.storage.number;
+                }
+            },
+        }},
         {"&&", {
             {
                 Variable::Type::Number, Variable::Type::Number, -1,

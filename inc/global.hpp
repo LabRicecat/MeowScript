@@ -34,6 +34,8 @@ namespace global {
     bool pop_trace();
 
     inline std::string origin_file = "";
+
+    fs::path include_parent_path();
 }
 
 MEOWSCRIPT_HEADER_END

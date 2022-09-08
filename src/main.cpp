@@ -65,7 +65,7 @@ int main(int argc, char** argv) {
                 return 0;
             }
             try {
-                MeowScript::run_text(input,false,false,-1,{},std::filesystem::current_path(),false,true);
+                MeowScript::run_text(input,false,false,-1,{},fs::current_path(),false,true);
             }
             catch(MeowScript::errors::MWSMessageException& err) {
                 error_message_pretty(err);
@@ -81,11 +81,11 @@ int main(int argc, char** argv) {
             MeowScript::make_paths();
         }
 
-        if(!std::filesystem::exists(std::string(argv[1]))) {
+        if(!fs::exists(std::string(argv[1]))) {
             std::cout << "No such file: \"" + std::string(argv[1]) + "\"\n";
             return 1;
         }
-        else if(std::filesystem::is_directory(std::string(argv[1]))) {
+        else if(fs::is_directory(std::string(argv[1]))) {
             std::cout << "Can't parse directory! (\"" + std::string(argv[1]) + "\")\n";
             return 1;
         }
@@ -97,7 +97,7 @@ int main(int argc, char** argv) {
                 var.type = MeowScript::Variable::Type::String;
                 MeowScript::global::args.push_back(var);
             }
-            std::filesystem::path from = std::filesystem::path(std::string(argv[1]));
+            fs::path from = fs::path(std::string(argv[1]));
             MeowScript::global::origin_file = from;
             MeowScript::run_file(std::string(argv[1]),true,false,-1,{},from);
         }

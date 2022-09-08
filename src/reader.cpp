@@ -261,35 +261,44 @@ bool MeowScript::is_valid_argumentlist(Token context) {
         return true;
     }
     bool tm = true;
-    int in_br = false;
+    std::stack<char> in_br;
     bool in_q = false;
+    bool in_br_fb = false;
     for(auto i : context.content) {
-        if(i == ',' && tm && in_br == 0 && !in_q) {
+        if(i == ',' && tm && in_br.empty() && !in_q && !in_br_fb) {
             return false;
         }
-        else if(i == ',' && in_br == 0 && !in_q) {
+        else if(i == ',' && in_br.empty() && !in_q && !in_br_fb) {
             tm = true;
         }
-        else if(i == '"' && in_br == 0) {
-            in_q = !in_q;
+        else if(i == '"') {
+            if(!in_br.empty()) {
+                in_br_fb = !in_br_fb;
+            }
+            else {
+                in_q = !in_q;
+                tm = false;
+            }
+        }
+        else if(is_open_brace(i) && !in_q && !in_br_fb) {
+            in_br.push(i);
             tm = false;
         }
-        else if(is_open_brace(i) && !in_q) {
-            ++in_br;
+        else if(is_closing_brace(i) && !in_q && !in_br_fb) {
+            if(in_br.empty() || !is_brace_pair(in_br.top(),i)) {
+                return false;
+            }
+            in_br.pop();
             tm = false;
         }
-        else if(is_closing_brace(i) && !in_q) {
-            --in_br;
-            tm = false;
-        }
-        else if(is_valid_operator_char(i) && !in_q && in_br == 0) {
+        else if(is_valid_operator_char(i) && !in_q && in_br.empty() && !in_br_fb) {
             return false;
         }
-        else if(i != ' ' && i != '\t' && !is_newline(i)) {
+        else if(i != ' ' && i != '\t' && !is_newline(i) && !in_q && in_br.empty() && !in_br_fb) {
             tm = false;
         }
     }
-    if(in_q || in_br || tm) {
+    if(in_q || !in_br.empty() || tm) {
         return false;
     }
     return true;
@@ -305,29 +314,36 @@ bool MeowScript::brace_check(Token context, char open, char close) {
     }
 
     int brace_counter = 0;
+    bool in_brace_until_quote = false;
     bool in_quote = false;
     bool until_eoc = false;
     bool until_nl = false;
     for(size_t i = 0; i < context.content.size(); ++i) {
-        if(context.content[i] == '"') {
-            in_quote = !in_quote;
+        if(context.content[i] == '"' && !until_eoc && !until_nl) {
+            if(brace_counter == 1) {
+                in_quote = !in_quote;
+            }
+            else {
+                in_brace_until_quote = !in_brace_until_quote;
+            }
         }
-        else if(context.content[i] == open && !in_quote) {
+        else if(context.content[i] == open && !in_quote && !until_eoc && !until_nl && !in_brace_until_quote) {
             ++brace_counter;
         }
-        else if(context.content[i] == close && !in_quote && !until_eoc && !until_nl) {
+        else if(context.content[i] == close && !in_quote && !until_eoc && !until_nl && !in_brace_until_quote) {
             --brace_counter;
         }
-        else if(context.content[i] == '#' && !in_quote) {
+        else if(context.content[i] == '#' && !in_quote && !in_brace_until_quote) {
             if(context.content.size() != i+1 && context.content[i+1] == '#') {
                 until_eoc = !until_eoc;
                 ++i;
+                until_nl = false;
             }
             else if(!until_eoc) {
                 until_nl = true;
             }
         }
-        else if(is_newline(context.content[i])) {
+        else if(is_newline(context.content[i]) && !in_quote && !in_brace_until_quote) {
             until_nl = false;
         }
         
@@ -345,6 +361,7 @@ std::vector<Line> MeowScript::lex_text(std::string source) {
     std::stack<char> in_braces;
     bool until_nl = false;
     bool until_eoc = false;
+    bool in_brace_until_quote = false;
     uint32_t line_counter = 1;
     Line tmp_line;
     tmp_line.line_count = 1;
@@ -370,7 +387,7 @@ std::vector<Line> MeowScript::lex_text(std::string source) {
             ++line_counter;
             until_nl = false;
         }
-        else if(is_open_brace(source[i]) && !in_quote && !until_eoc && !until_nl) {
+        else if(is_open_brace(source[i]) && !in_quote && !until_eoc && !until_nl && !in_brace_until_quote) {
             // So that things like add(1,1) is lexed as {"add","(1,1)"} !
             if((tmp_token.content != "" || tmp_token.in_quotes) && in_braces.empty()) {
                 tmp_line.source.push_back(tmp_token);
@@ -380,7 +397,7 @@ std::vector<Line> MeowScript::lex_text(std::string source) {
             tmp_token.content += source[i];
             in_braces.push(source[i]);
         }
-        else if(is_closing_brace(source[i]) && !in_quote && !until_eoc && !until_nl) {
+        else if(is_closing_brace(source[i]) && !in_quote && !until_eoc && !until_nl && !in_brace_until_quote) {
             if(in_braces.empty() || !is_brace_pair(in_braces.top(),source[i])) {
                 std::string err = "Unexpected token: " + std::string(1,source[i]);
                 throw errors::MWSMessageException{err,line_counter};
@@ -418,16 +435,22 @@ std::vector<Line> MeowScript::lex_text(std::string source) {
             //    tmp_token.content += '\\';
             //}
         }
-        else if(source[i] == '"' && !until_eoc && !until_nl && in_braces.empty()) {
-            if(in_quote) {
-                in_quote = false;
-                if(source.size()-1 != i && source[i+1] != '\t' && source[i+1] != ' ' && source[i+1] != ',' && source[i+1] != ';' && !is_newline(source[i+1]) && !is_valid_operator_char(source[i+1])) {
-                    throw errors::MWSMessageException{"Unexpected token: " + std::string(1,source[i]),line_counter};
+        else if(source[i] == '"' && !until_eoc && !until_nl) {
+            if(in_braces.empty()) {
+                if(in_quote) {
+                    in_quote = false;
+                    if(source.size()-1 != i && source[i+1] != '\t' && source[i+1] != ' ' && source[i+1] != ',' && source[i+1] != ';' && !is_newline(source[i+1]) && !is_valid_operator_char(source[i+1])) {
+                        throw errors::MWSMessageException{"Unexpected token: " + std::string(1,source[i]),line_counter};
+                    }
+                }
+                else {
+                    tmp_token.in_quotes = true;
+                    in_quote = true;
                 }
             }
             else {
-                tmp_token.in_quotes = true;
-                in_quote = true;
+                in_brace_until_quote = !in_brace_until_quote;
+                tmp_token.content += source[i];
             }
         }
         else if((source[i] == ' ' || source[i] == '\t' || source[i] == ',') && !in_quote && in_braces.empty() && !until_eoc && !until_nl) {
@@ -451,7 +474,7 @@ std::vector<Line> MeowScript::lex_text(std::string source) {
             }
             tmp_line.source.push_back(std::string(1,source[i]));
         }
-        else if(source[i] == '#' && !in_quote) {
+        else if(source[i] == '#' && !in_quote && !in_brace_until_quote) {
             if(source.size() != i+1 && source[i+1] == '#') {
                 if(until_eoc) {
                     if(tmp_token.content != "" || tmp_token.in_quotes) {

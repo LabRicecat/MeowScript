@@ -1,0 +1,79 @@
+using os
+using filesystem
+
+event public error(message :: String)
+
+listen error(message :: String) {
+    print "An error occured:"
+    print message
+    os.exit(1)
+}
+
+func get_file()->String {
+    new arg_list {os.args()}
+    if({arg_list.length()} == 0) {
+        occur error("No file given!")
+    }
+    new fname {arg_list.at(0)}
+    if({filesystem.exists fname} == 0) {
+        occur error("Given file does not exist!")
+    }
+    return fname
+}
+
+new data [0]
+new index 0
+
+func parse(content :: String)->Void {
+    new c ""
+    
+    new i 0
+    while(i < {content.length()}) {
+        set c {content.at(i)}
+        if(c == "+") {
+            data.replace(index,({data.at(index)}+1))
+        }
+        elif(c == "-") {
+            data.replace(index,({data.at(index)}-1))
+        }
+        elif(c == "<") {
+            if(index == 0) {
+                occur error("Index out of bounce!")
+            }
+            set index (index - 1)
+        }
+        elif(c == ">") {
+            while((index+1) >= {data.length()}) {
+                data.push_back(0)
+            }
+            set index (index + 1)
+        }
+        elif(c == ".") {
+            print {data.at(index)}
+        }
+        elif(c == "]") {
+            occur error("Unexcpected token: ]")
+        }
+        elif(c == "[") {
+            new loop_content ""
+            set i (i+1)
+            while(i < {content.length()} && {content.at(i)} != "]") {
+                set loop_content (loop_content + {content.at(i)})
+                set i (i+1)
+            }
+            while({data.at(index)} != 0) {
+                parse(loop_content)
+            }
+        }
+        else {
+            # ignore
+        }
+
+        set i (i+1)
+    }
+}
+
+if({os.main_file()}) {
+    new file {get_file()}
+	parse({filesystem.read file})
+}

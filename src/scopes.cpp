@@ -48,10 +48,19 @@ void MeowScript::pop_scope(bool save) {
     }
 }
 
-void MeowScript::load_scope(int idx, std::map<std::string,Variable> external_vars) {
-    scope_trace.push(idx);
-    for(auto i : external_vars) {
-        current_scope()->vars[i.first] = i.second;
+void MeowScript::load_scope(int idx, std::map<std::string,Variable> external_vars, bool hard_copy) {
+    if(hard_copy) {
+        scope_trace.push(idx);
+        for(auto i : external_vars) {
+            current_scope()->vars[i.first] = i.second;
+        }
+    }
+    else {
+        new_scope(scopes[idx].parent,scopes[idx].vars);
+        current_scope()->functions = scopes[idx].functions;
+        for(auto i : external_vars) {
+            current_scope()->vars[i.first] = i.second;
+        }
     }
 }
 

@@ -33,7 +33,8 @@ void new_scope(int parent = -1, std::map<std::string,Variable> external_vars = {
 void pop_scope(bool save = false);
 
 // The external_vars NOT be deleted, but overriden if they already exist!
-void load_scope(int idx, std::map<std::string,Variable> external_vars = {});
+// Actually just copies the data of the scope
+void load_scope(int idx, std::map<std::string,Variable> external_vars = {}, bool hard_load = false);
 
 unsigned int get_new_scope();
 

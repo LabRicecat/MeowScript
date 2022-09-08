@@ -31,7 +31,7 @@ public:
     stor_ storage;
 
     Variable(List list) {type = Type::List; storage.list = list;}
-    Variable(Token string) {type = Type::String; storage.string = string;}
+    Variable(Token string) {type = Type::String; storage.string = string; storage.string.in_quotes = true;}
     Variable(long double number) {type = Type::Number; storage.number = number;}
     Variable() {}
 

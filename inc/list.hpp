@@ -22,44 +22,9 @@ struct List {
         if(context.content.size() == 0) {
             return true;
         }
-        bool tm = true;
-        int in_br = false;
-        bool in_q = false;
-        bool bsh = false;
-        for(auto i : context.content) {
-            if(i == ',' && tm && in_br == 0 && !in_q) {
-                return false;
-            }
-            else if(i == ',' && in_br == 0 && !in_q) {
-                tm = true;
-            }
-            else if(i == '"' && in_br == 0 && !bsh) {
-                in_q = !in_q;
-                tm = false;
-            }
-            else if(is_open_brace(i) && !in_q) {
-                ++in_br;
-                tm = false;
-            }
-            else if(is_closing_brace(i) && !in_q) {
-                --in_br;
-                tm = false;
-            }
-            if(i == '\\') {
-                if(bsh) {
-                    tm = false;
-                }
-                bsh = true;
-            }
-            else {
-                tm = false;
-                bsh = false;
-            }
-        }
-        if(in_q || in_br || tm) {
-            return false;
-        }
-        return true;
+        
+        context.content = "(" + context.content + ")";
+        return is_valid_argumentlist(context.content);
     }
 
     std::string to_string();

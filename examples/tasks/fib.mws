@@ -9,8 +9,25 @@ func fib(a :: Number)->Number {
     }
 }
 
+func fib2(n :: Number)->Number {
+    new a 1
+    new b 0
 
+    for i in n {
+        set b (a+b)
+        set a (b-a)
+    }
+    return b
+}
+
+# slower
 fib(0)
 fib(1)
 fib(6)
 fib(20)
+
+# faster
+fib2(0)
+fib2(1)
+fib2(6)
+fib2(20)

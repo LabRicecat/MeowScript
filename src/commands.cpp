@@ -475,7 +475,7 @@ static std::vector<Command> commandlist = {
             case General_type::STRING:
                 {
                     List ret;
-                    std::string iter = alist[0].to_variable().storage.string.content;
+                    std::string iter = alist[0].source.content;
                     for(auto i : iter) {
                         Token tk;
                         tk.content = i;
@@ -526,13 +526,13 @@ static std::vector<Command> commandlist = {
             car_String,
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
-        std::filesystem::path pth = global::include_path.top();
+        fs::path pth = global::include_path.top();
         pth = pth.remove_filename().string() + args[0].source.content;
-        std::filesystem::path pth2;
+        fs::path pth2;
         
-        if(!std::filesystem::exists(pth)) {
+        if(!fs::exists(pth)) {
             pth2 = pth.string() + ".mws";
-            if(!std::filesystem::exists(pth2)) {
+            if(!fs::exists(pth2)) {
                 throw errors::MWSMessageException{"Trying to import unknown file: \"" + pth.string() + "\"",global::get_line()};
             }
             return run_file(pth2,true,false,-1,{},pth2,false,true);

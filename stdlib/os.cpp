@@ -215,6 +215,52 @@ public:
                 ret.elements = global::args;
                 return ret;
             }}
+        ).add_command(
+            {"utime",
+            {
+                car_ArgumentList
+            },
+            [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+                argument_list alist = tools::parse_argument_list(args[0]);
+                if(alist.size() != 0) {
+                    throw errors::MWSMessageException{"Too many/few arguments for command: utime\n\t- Expected: 0\n\t- But got: " + std::to_string(alist.size()) ,global::get_line()};
+                }
+                
+                return std::to_string(time(NULL));
+            }}
+        ).add_command(
+            {"time",
+            {
+                car_ArgumentList
+            },
+            [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+                argument_list alist = tools::parse_argument_list(args[0]);
+                if(alist.size() != 1) {
+                    throw errors::MWSMessageException{"Too many/few arguments for command: time\n\t- Expected: 1\n\t- But got: " + std::to_string(alist.size()) ,global::get_line()};
+                }
+                alist[0] = tools::check4placeholder(alist[0]);
+                if(alist[0].type != General_type::STRING) {
+                    throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: String\n\t- But got: " + general_t2token(alist[0].type).content,global::get_line()};
+                }
+                std::time_t t = std::time(0);
+                std::tm* now = std::localtime(&t);
+                if(alist[0].source.content == "hours") {
+                    int ret = now->tm_hour;
+                    return ret;
+                }
+                else if(alist[0].source.content == "minutes") {
+                    int ret = now->tm_min;
+                    return ret;
+                }
+                else if(alist[0].source.content == "seconds") {
+                    int ret = now->tm_sec;
+                    return ret;
+                }
+                else {
+                    throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: [\"hours\",\"minutes\",\"seconds\"]\n\t- But got: " + alist[0].to_string(),global::get_line()};
+                }
+                return general_null;
+            }}
         );
         os.enabled = false;
         add_module(os);

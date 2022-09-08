@@ -508,7 +508,7 @@ std::vector<Method<List>> list_method_list = {
 
         Variable value;
         try {
-            value = tools::check4placeholder(args[1]).to_variable();
+            value = tools::check4placeholder(alist[1]).to_variable();
         }
         catch(...) {
             throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: [Number,String,List]\n\tBut got: " + general_t2token(args[1].type).content,global::get_line()};
@@ -518,7 +518,7 @@ std::vector<Method<List>> list_method_list = {
             throw errors::MWSMessageException{"Can't call method \"at\" a on empty list!",global::get_line()};
         }
         self->elements[index] = value;
-        return *self;
+        return general_null;
     }},
 
     {"sort",
@@ -874,7 +874,7 @@ std::vector<Method<Token>> string_method_list = {
 
         Variable value;
         try {
-            value = tools::check4placeholder(args[1]).to_variable();
+            value = tools::check4placeholder(alist[1]).to_variable();
             if(value.type != Variable::Type::String) {
                 throw errors::MWSException{};
             }
@@ -886,8 +886,8 @@ std::vector<Method<Token>> string_method_list = {
         if(self->content.size() == 0) {
             throw errors::MWSMessageException{"Can't call method \"replace\" a on empty list!",global::get_line()};
         }
-        self->content = self->content.substr(0,index-1) + value.storage.string.content + self->content.substr(index,self->content.size()-1);
-        return *self;
+        self->content = self->content.substr(0,index) + value.storage.string.content + self->content.substr(index+1,self->content.size()-1);
+        return general_null;
     }},
 
     {"to_upper",

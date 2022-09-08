@@ -22,6 +22,7 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
     }
     else {
         load_scope(load_idx,external_vars);
+        save_scope = false;
     }
 
     unsigned int ln = current_scope()->current_line;

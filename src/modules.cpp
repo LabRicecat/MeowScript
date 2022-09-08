@@ -30,7 +30,7 @@ std::string MeowScript::get_username() {
 #define MEOWSCRIPT_MODULE_PATH ("/home/" + MeowScript::get_username() + "/.meowscript/lib/")
 
 void MeowScript::load_all_modules() {
-    for(auto i : std::filesystem::recursive_directory_iterator(MEOWSCRIPT_MODULE_PATH)) {
+    for(auto i : fs::recursive_directory_iterator(MEOWSCRIPT_MODULE_PATH)) {
         if(i.path().extension() == MEOWSCRIPT_SHARED_OBJECT_EXT) {
             std::string pth = i.path().string();
             void* handle = dlopen(pth.c_str(),RTLD_LAZY);
@@ -42,7 +42,7 @@ void MeowScript::load_all_modules() {
 }
 
 bool MeowScript::load_module(std::string name) {
-    for(auto i : std::filesystem::recursive_directory_iterator(MEOWSCRIPT_MODULE_PATH)) {
+    for(auto i : fs::recursive_directory_iterator(MEOWSCRIPT_MODULE_PATH)) {
         if(i.path().filename() == name && i.path().extension() == MEOWSCRIPT_SHARED_OBJECT_EXT) {
             std::string pth = i.path().string();
             void* handle = dlopen(pth.c_str(),RTLD_LAZY);
@@ -87,7 +87,7 @@ std::string MeowScript::get_username() {
 }
 
 void MeowScript::load_all_modules() {
-    for(auto i : std::filesystem::recursive_directory_iterator(MEOWSCRIPT_MODULE_PATH)) {
+    for(auto i : fs::recursive_directory_iterator(MEOWSCRIPT_MODULE_PATH)) {
         if(i.path().extension() == ".dll") {
             auto pth = string2wstring(i.path().string());
             auto h = LoadLibrary(pth.c_str());
@@ -99,7 +99,7 @@ void MeowScript::load_all_modules() {
 }
 
 bool MeowScript::load_module(std::string name) {
-    for(auto i : std::filesystem::recursive_directory_iterator(MEOWSCRIPT_MODULE_PATH)) {
+    for(auto i : fs::recursive_directory_iterator(MEOWSCRIPT_MODULE_PATH)) {
         if(i.path().filename() == name) {
             auto pth = string2wstring(i.path().string());
             auto h = LoadLibrary(pth.c_str());
@@ -185,7 +185,7 @@ std::vector<Module>* MeowScript::get_module_list() {
 }
 
 bool MeowScript::is_loadable_module(std::string name) {
-    for(auto i : std::filesystem::recursive_directory_iterator(MEOWSCRIPT_MODULE_PATH)) {
+    for(auto i : fs::recursive_directory_iterator(MEOWSCRIPT_MODULE_PATH)) {
         if(i.path().extension() == MEOWSCRIPT_SHARED_OBJECT_EXT && i.path().filename() == name + MEOWSCRIPT_SHARED_OBJECT_EXT) {
             return true;
         }
@@ -194,33 +194,33 @@ bool MeowScript::is_loadable_module(std::string name) {
 }
 
 void MeowScript::make_paths() {
-    if(!std::filesystem::exists(MEOWSCRIPT_PATH)) {
-        std::filesystem::create_directory(MEOWSCRIPT_PATH);
+    if(!fs::exists(MEOWSCRIPT_PATH)) {
+        fs::create_directory(MEOWSCRIPT_PATH);
     }
-    if(!std::filesystem::exists(MEOWSCRIPT_CONFIG_PATH)) {
+    if(!fs::exists(MEOWSCRIPT_CONFIG_PATH)) {
         std::ofstream of(MEOWSCRIPT_CONFIG_PATH, std::ios::app);
         of.close();
     }
-    if(!std::filesystem::exists(MEOWSCRIPT_MODULE_PATH)) {
-        std::filesystem::create_directory(MEOWSCRIPT_MODULE_PATH);
+    if(!fs::exists(MEOWSCRIPT_MODULE_PATH)) {
+        fs::create_directory(MEOWSCRIPT_MODULE_PATH);
     }
 }
 
 bool MeowScript::check_paths() {
-    if(!std::filesystem::exists(MEOWSCRIPT_PATH)) {
+    if(!fs::exists(MEOWSCRIPT_PATH)) {
         return false;
     }
-    if(!std::filesystem::exists(MEOWSCRIPT_CONFIG_PATH)) {
+    if(!fs::exists(MEOWSCRIPT_CONFIG_PATH)) {
         return false;
     }
-    if(!std::filesystem::exists(MEOWSCRIPT_MODULE_PATH)) {
+    if(!fs::exists(MEOWSCRIPT_MODULE_PATH)) {
         return false;
     }
     return true;
 }
 
 bool MeowScript::build_stdlib() {
-    if(!std::filesystem::exists(".." MEOWSCRIPT_DIR_SL "stdlib")) {
+    if(!fs::exists(".." MEOWSCRIPT_DIR_SL "stdlib")) {
         std::cout << "Could not find stdlib/ directory! Sure you run in installation folder?\n";
         return false;
     }
@@ -228,17 +228,17 @@ bool MeowScript::build_stdlib() {
         std::cout << "No shell avalable, try to execute meow-script somehow else!\n";
     }
     system("cd .. && cd stdlib && mkdir build && cd build && cmake ../ && make");
-    for(auto i : std::filesystem::recursive_directory_iterator(".." MEOWSCRIPT_DIR_SL "stdlib" MEOWSCRIPT_DIR_SL "build")) {
+    for(auto i : fs::recursive_directory_iterator(".." MEOWSCRIPT_DIR_SL "stdlib" MEOWSCRIPT_DIR_SL "build")) {
         if(i.path().extension() == MEOWSCRIPT_SHARED_OBJECT_EXT) {
             std::string name = i.path().filename().string();
             name.erase(name.begin(),name.begin()+3); // remove the `lib`
             
-            if(std::filesystem::exists(std::string(MEOWSCRIPT_MODULE_PATH) + name.c_str())) {
-                std::filesystem::remove_all(std::string(MEOWSCRIPT_MODULE_PATH) + name.c_str());
+            if(fs::exists(std::string(MEOWSCRIPT_MODULE_PATH) + name.c_str())) {
+                fs::remove_all(std::string(MEOWSCRIPT_MODULE_PATH) + name.c_str());
             }
-            std::filesystem::copy(i.path(),MEOWSCRIPT_MODULE_PATH + name);
+            fs::copy(i.path(),MEOWSCRIPT_MODULE_PATH + name);
         }
     }
-    std::filesystem::remove_all(".." MEOWSCRIPT_DIR_SL "stdlib" MEOWSCRIPT_DIR_SL "build");
+    fs::remove_all(".." MEOWSCRIPT_DIR_SL "stdlib" MEOWSCRIPT_DIR_SL "build");
     return true;
 }
