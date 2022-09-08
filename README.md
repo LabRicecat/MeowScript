@@ -32,3 +32,6 @@ $ ./meow-script --help
 
 ## How to use
 Please read the wiki [here](https://github.com/SirWolfi/MeowScript/wiki) to learn more about MeowScript.
+
+## Try it out
+You can try out MeowScript live by using the `--shell` option.
