@@ -5,6 +5,7 @@
 #include "reader.hpp"
 
 #include <tuple>
+#include <map>
 
 MEOWSCRIPT_HEADER_BEGIN
 

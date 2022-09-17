@@ -6,7 +6,7 @@
 
 #include <vector>
 
-MEOWSCRIPT_HEADER_BEGIN
+namespace MeowScript {
 
 struct Variable;
 
@@ -53,6 +53,6 @@ Method<Token>* get_string_method(std::string name);
 bool is_string_method(std::string name);
 
 
-MEOWSCRIPT_HEADER_END
+}
 
 #endif
