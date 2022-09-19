@@ -61,6 +61,13 @@ struct Token {
     bool operator>=(Token tk) {
         return tk.content == content || operator>(tk);
     }
+
+    bool operator==(Token tk) {
+        return content == tk.content && in_quotes == tk.in_quotes;
+    }
+    bool operator==(const Token tk) const {
+        return content == tk.content && in_quotes == tk.in_quotes;
+    }
 };
 
 struct Line {
@@ -87,6 +94,7 @@ bool is_known_keyword(Token text);
 bool is_valid_argumentlist(Token context);
 bool is_brace_pair(char open,char close);
 bool is_event(std::string name);
+bool is_dictionary(Token context);
 
 using lexed_tokens = std::vector<Line>;
 
@@ -109,6 +117,7 @@ enum class General_type {
     MODULE,
     EVENT,
     KEYWORD,
+    DICTIONARY,
     UNKNOWN,
     VOID
 };

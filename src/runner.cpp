@@ -276,8 +276,56 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
                 get_variable(lines[i].source[0])->storage.list = ls;
             }
         }
+        else if(identf_line.front() == General_type::DICTIONARY || (identf_line.front() == General_type::NAME && is_variable(lines[i].source[0]) && get_variable(lines[i].source[0])->type == Variable::Type::Dictionary)) {
+            for(size_t j = 1; j < lines[i].source.size(); ++j) {
+                identf_line.push_back(get_type(lines[i].source[j]));
+            }
+
+            if(identf_line.size() < 3 || lines[i].source[1].content != ".") {
+                throw errors::MWSMessageException{"Invalid string-method call!\n\t- Expected: string.method <args>...",global::get_line()};
+            }
+            auto idf_first = identf_line.front();
+            identf_line.erase(identf_line.begin()); // string
+            identf_line.erase(identf_line.begin()); // .
+
+            Method<Dictionary>* method = get_dictionary_method(lines[i].source[2].content);
+            if(method == nullptr) {
+                throw errors::MWSMessageException{"Unknown dictionary method: " + lines[i].source[2].content,global::get_line()};
+            }
+
+            std::vector<GeneralTypeToken> args;
+            if(method->args.size() != lines[i].source.size()-3) {
+                std::string err = "Too many/few arguments for dictionary method: " + method->name + "\n\t- Expected: " + std::to_string(method->args.size()) + "\n\t- But got: " + std::to_string(lines[i].source.size()-3);
+                throw errors::MWSMessageException{err,global::get_line()};
+            }
+
+            for(size_t j = 0; j < method->args.size(); ++j) {
+                auto identf = get_type(lines[i].source[j+3],method->args[j]);
+                if(!method->args[j].matches(identf)) {
+                    std::string err_msg = "Invalid argument:\n\t- Expected: [";
+                    for(size_t k = 0; k < method->args[j].carry.size(); ++k) {
+                        err_msg += (k == 0 ? "":",") + general_t2token(General_type(method->args[j].carry[k]-1)).content;
+                    }
+                    err_msg += "]\n\t- But got: " + general_t2token(get_type(lines[i].source[j+3].content)).content + " (" + lines[i].source[j+3].content + ")";
+                    throw errors::MWSMessageException(err_msg,global::get_line());
+                }
+                else {
+                    args.push_back(GeneralTypeToken(lines[i].source[j+3]));
+                }
+            }
+
+            if(idf_first == General_type::DICTIONARY) {
+                Dictionary dic = dic_from_token(lines[i].source[0]);
+                ret = method->run(args,&dic);
+            }
+            else {
+                Dictionary dic = get_variable(lines[i].source[0])->storage.dict;
+                ret = method->run(args,&dic);
+                get_variable(lines[i].source[0])->storage.dict = dic;
+            }
+        }
         else {
-            std::string err = "Invalid start of line!\n\t- Expected: [Command,Function,Module,String,List]\n\t- But got: " + general_t2token(identf_line.front()).content + " (" + lines[i].source[0].content + ")\n"; 
+            std::string err = "Invalid start of line!\n\t- Expected: [Command,Function,Module,String,List,Dictionary]\n\t- But got: " + general_t2token(identf_line.front()).content + " (" + lines[i].source[0].content + ")\n"; 
             throw errors::MWSMessageException{err,global::get_line()};
         }
 

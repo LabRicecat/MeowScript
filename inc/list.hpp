@@ -5,6 +5,7 @@
 #include "reader.hpp"
 
 #include <vector>
+#include <unordered_map>
 
 MEOWSCRIPT_HEADER_BEGIN
 
@@ -27,7 +28,7 @@ struct List {
         return is_valid_argumentlist(context.content);
     }
 
-    std::string to_string();
+    std::string to_string() const;
 };
 
 List construct_list(Token context);
@@ -51,6 +52,12 @@ bool is_list_method(std::string name);
 std::vector<Method<Token>>* get_string_method_list();
 Method<Token>* get_string_method(std::string name);
 bool is_string_method(std::string name);
+
+struct Dictionary;
+
+std::vector<Method<Dictionary>>* get_dictionary_method_list();
+Method<Dictionary>* get_dictionary_method(std::string name);
+bool is_dictionary_method(std::string name);
 
 
 MEOWSCRIPT_HEADER_END

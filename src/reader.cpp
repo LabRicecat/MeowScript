@@ -162,6 +162,7 @@ bool MeowScript::is_valid_var_t(Token context) {
         "Number",
         "String",
         "List",
+        "Dictionary",
         "Any",
         "Void",
     };
@@ -189,6 +190,7 @@ bool MeowScript::is_valid_general_t(Token context) {
         "Module",
         "Event",
         "Keyword",
+        "Dictionary",
         "Unknown",
         "Void"
     };
@@ -306,6 +308,55 @@ bool MeowScript::is_valid_argumentlist(Token context) {
 
 bool MeowScript::is_brace_pair(char open,char close) {
     return (open=='('&&close==')') || (open=='['&&close==']') || (open=='{'&&close=='}');
+}
+
+bool MeowScript::is_dictionary(Token context) {
+    if(context.in_quotes || context.content == "") {
+        return false;
+    }
+    if(!brace_check(context,'{','}')) {
+        return false;
+    }
+    context.content.erase(context.content.begin());
+    context.content.erase(context.content.end()-1);
+    
+    auto lines = lex_text(context.content);
+    std::vector<Token> lexed;
+    for(auto i : lines)
+        for(auto j : i.source)
+            lexed.push_back(j);
+    
+    if(lexed.size() == 0) {
+        return true;
+    }
+
+    GeneralTypeToken key;
+    GeneralTypeToken value;
+    bool got_equals = false;
+    
+    for(auto i : lexed) {
+        if(!i.in_quotes && i.content == "=") {
+            if(got_equals || key == general_null) {
+                return false;
+            }
+            got_equals = true;
+        }
+        else if(key == general_null) {
+            key = GeneralTypeToken(i);
+        }
+        else if(got_equals && value == general_null) {
+            value = GeneralTypeToken(i);
+        }
+        else if(!i.in_quotes && i.content == ",") {
+            if(!got_equals || key == general_null || value == general_null) {
+                return false;
+            }
+            got_equals = false;
+            key = general_null;
+            value = general_null;
+        }
+    }
+    return !(!got_equals || key == general_null || value == general_null);
 }
 
 bool MeowScript::brace_check(Token context, char open, char close) {

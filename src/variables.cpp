@@ -22,6 +22,8 @@ Variable::Type MeowScript::general_t2var_t(General_type type) {
             return Variable::Type::String;
         case General_type::VOID:
             return Variable::Type::VOID;
+        case General_type::DICTIONARY:
+            return Variable::Type::Dictionary;
         default:
             std::string err = "Can't cast GeneralType " + general_t2token(type).content + " to VariableType!";
             throw errors::MWSMessageException(err,global::get_line());
@@ -63,10 +65,84 @@ Variable MeowScript::make_variable(Token context, Variable::Type ty_) {
             return Variable(std::stod(tools::remove_uness_decs(context.content,false)));
         case Variable::Type::String:
             return Variable(context.content);
+        case Variable::Type::Dictionary:
+            {Variable ret; ret.type = Variable::Type::Dictionary; ret.storage.dict = dic_from_token(context); return ret;}
         case Variable::Type::VOID:
             {Variable ret; ret.type = type; return ret;}
     }
     return Variable();
+}
+
+Dictionary MeowScript::dic_from_token(Token context) {
+    if(context.in_quotes || context.content == "") {
+        return Dictionary{};
+    }
+    if(!brace_check(context,'{','}')) {
+        return Dictionary{};
+    }
+    context.content.erase(context.content.begin());
+    context.content.erase(context.content.end()-1);
+    
+    auto lines = lex_text(context.content);
+    std::vector<Token> lexed;
+    for(auto i : lines)
+        for(auto j : i.source)
+            lexed.push_back(j);
+    
+    if(lexed.size() == 0) {
+        return Dictionary{};
+    }
+
+    GeneralTypeToken key;
+    GeneralTypeToken value;
+    bool got_equals = false;
+    Dictionary ret;
+
+    for(auto i : lexed) {
+        if(!i.in_quotes && i.content == "=") {
+            if(got_equals || key == general_null) {
+                return Dictionary{};
+            }
+            got_equals = true;
+        }
+        else if(key == general_null) {
+            key = GeneralTypeToken(i);
+        }
+        else if(got_equals && value == general_null) {
+            value = GeneralTypeToken(i);
+        }
+        else if(!i.in_quotes && i.content == ",") {
+            if(!got_equals || key == general_null || value == general_null) {
+                return Dictionary{};
+            }
+            ret[key] = tools::check4placeholder(value);
+            got_equals = false;
+            key = general_null;
+            value = general_null;
+        }
+        else {
+            return Dictionary{};
+        }
+    }
+    if(got_equals || key != general_null || value != general_null) {
+        if(got_equals && key != general_null && value != general_null) {
+            ret[key] = tools::check4placeholder(value);
+        }
+        else {
+            return Dictionary{};
+        }
+    }
+    return ret;
+}
+
+Token MeowScript::dic_to_token(Dictionary dic) {
+    Token ret;
+    ret.content = "{";
+    for(auto i : dic.pairs()) {
+        ret.content += i.first.to_string() + " = " + i.second.to_string() + ",";
+    }
+    ret.content.erase(ret.content.end()-1); // removes the last ","
+    return ret.content + "}";
 }
 
 Token MeowScript::general_t2token(General_type type) {
@@ -84,6 +160,7 @@ Token MeowScript::general_t2token(General_type type) {
         "Module",
         "Event",
         "Keyword",
+        "Dictionary",
         "Unknown",
         "Void"
     };
@@ -95,6 +172,7 @@ Token MeowScript::var_t2token(Variable::Type type) {
         "Number",
         "String",
         "List",
+        "Dictionary",
         "UNKNOWN",
         "Any",
         "Void"
@@ -107,6 +185,7 @@ Variable::Type MeowScript::token2var_t(Token token) {
         "Number",
         "String",
         "List",
+        "Dictionary",
         "UNKNOWN",
         "Any",
         "Void"
@@ -129,16 +208,17 @@ Variable MeowScript::GeneralTypeToken::to_variable() const {
     }
 }
 
-std::string MeowScript::GeneralTypeToken::to_string() {
+std::string MeowScript::GeneralTypeToken::to_string() const {
     switch(type) {
         case General_type::STRING:
         case General_type::LIST:
         case General_type::NUMBER:
+        case General_type::DICTIONARY:
             return to_variable().to_string();
         case General_type::VOID:
             throw errors::MWSMessageException{"Can't cast GeneralType VOID to STRING",global::get_line()};
         default:
-            return this->source;
+            return this->source.content;
     }
 }
 
@@ -160,6 +240,9 @@ General_type MeowScript::get_type(Token context, CommandArgReqirement expected) 
     }
     if(brace_check(context,'(',')') && expected.matches(General_type::EXPRESSION)) {
         return General_type::EXPRESSION;
+    }
+    if(is_dictionary(context) && expected.matches(General_type::DICTIONARY)) {
+        return General_type::DICTIONARY;
     }
     if(brace_check(context,'{','}')) {
         return General_type::COMPOUND;
@@ -191,7 +274,7 @@ General_type MeowScript::get_type(Token context, CommandArgReqirement expected) 
     return General_type::UNKNOWN;
 }
 
-std::string MeowScript::Variable::to_string() {
+std::string MeowScript::Variable::to_string() const {
     if(type == Variable::Type::Number) {
         return tools::remove_uness_decs(std::to_string(storage.number),false);
     }
@@ -200,6 +283,9 @@ std::string MeowScript::Variable::to_string() {
     }
     else if(type == Variable::Type::List) {
         return storage.list.to_string();
+    }
+    else if(type == Variable::Type::Dictionary) {
+        return dic_to_token(storage.dict);
     }
     else {
         return "";
@@ -231,7 +317,7 @@ bool MeowScript::Variable::set(long double num) {
     return true;
 }
 
-std::string MeowScript::List::to_string() {
+std::string MeowScript::List::to_string() const {
     std::string ret = "[";
     for(size_t i = 0; i < elements.size(); ++i) {
         ret += (i == 0 ? "":",") + elements[i].to_string();
@@ -935,4 +1021,104 @@ Method<Token>* MeowScript::get_string_method(std::string name) {
 
 bool MeowScript::is_string_method(std::string name) {
     return get_string_method(name) != nullptr;
+}
+
+std::vector<Method<Dictionary>> dictionary_method_list = {
+    {"length",
+    {
+        car_ArgumentList,
+    },
+    [](std::vector<GeneralTypeToken> args, Dictionary* self)->GeneralTypeToken {
+        auto alist = tools::parse_argument_list(args[0]);
+        if(alist.size() != 0) {
+            throw errors::MWSMessageException{"Too many/few arguments for dictionary method!\n\t- Expected: 0\n\t- But got: " + std::to_string(alist.size()),global::get_line()};
+        }
+        return self->keys().size();
+    }},
+    {"set",
+    {
+        car_ArgumentList,
+    },
+    [](std::vector<GeneralTypeToken> args, Dictionary* self)->GeneralTypeToken {
+        auto alist = tools::parse_argument_list(args[0]);
+        if(alist.size() != 2) {
+            throw errors::MWSMessageException{"Too many/few arguments for dictionary method!\n\t- Expected: 2\n\t- But got: " + std::to_string(alist.size()),global::get_line()};
+        }
+        self->operator[](tools::check4placeholder(alist[0])) = tools::check4placeholder(alist[1]);
+        return general_null;
+    }},
+    {"get",
+    {
+        car_ArgumentList,
+    },
+    [](std::vector<GeneralTypeToken> args, Dictionary* self)->GeneralTypeToken {
+        auto alist = tools::parse_argument_list(args[0]);
+        if(alist.size() != 1) {
+            throw errors::MWSMessageException{"Too many/few arguments for dictionary method!\n\t- Expected: 1\n\t- But got: " + std::to_string(alist.size()),global::get_line()};
+        }
+        return self->operator[](tools::check4placeholder(alist[0]));
+    }},
+    {"keys",
+    {
+        car_ArgumentList,
+    },
+    [](std::vector<GeneralTypeToken> args, Dictionary* self)->GeneralTypeToken {
+        auto alist = tools::parse_argument_list(args[0]);
+        if(alist.size() != 0) {
+            throw errors::MWSMessageException{"Too many/few arguments for dictionary method!\n\t- Expected: 0\n\t- But got: " + std::to_string(alist.size()),global::get_line()};
+        }
+        List l;
+        for(auto i : self->keys()) {
+            try {
+                l.elements.push_back(i.to_variable());
+            }
+            catch(...) {
+                Variable v;
+                v.type = Variable::Type::VOID;
+                l.elements.push_back(v);
+            }
+        }
+
+        return l;
+    }},
+    {"values",
+    {
+        car_ArgumentList,
+    },
+    [](std::vector<GeneralTypeToken> args, Dictionary* self)->GeneralTypeToken {
+        auto alist = tools::parse_argument_list(args[0]);
+        if(alist.size() != 0) {
+            throw errors::MWSMessageException{"Too many/few arguments for dictionary method!\n\t- Expected: 0\n\t- But got: " + std::to_string(alist.size()),global::get_line()};
+        }
+        List l;
+        for(auto i : self->values()) {
+            try {
+                l.elements.push_back(i.to_variable());
+            }
+            catch(...) {
+                Variable v;
+                v.type = Variable::Type::VOID;
+                l.elements.push_back(v);
+            }
+        }
+
+        return l;
+    }},
+};
+
+std::vector<Method<Dictionary>>* MeowScript::get_dictionary_method_list() {
+    return &dictionary_method_list;
+}
+
+Method<Dictionary>* MeowScript::get_dictionary_method(std::string name) {
+    for(auto& i : dictionary_method_list) {
+        if(i.name == name) {
+            return &i;
+        }
+    }
+    return nullptr;
+}
+
+bool MeowScript::is_dictionary_method(std::string name) {
+    return get_dictionary_method(name) != nullptr;
 }

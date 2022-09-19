@@ -62,6 +62,55 @@ argument_list MeowScript::tools::parse_argument_list(Token context) {
     return ret;
 }
 
+const std::vector<std::pair<GeneralTypeToken,GeneralTypeToken>> Dictionary::pairs() const {
+    std::vector<std::pair<GeneralTypeToken,GeneralTypeToken>> ret;
+    for(size_t i = 0; i < keys().size(); ++i) {
+        ret.push_back(std::make_pair(keys()[i],values()[i]));
+    }
+    return ret;
+}
+std::vector<std::pair<GeneralTypeToken,GeneralTypeToken>> Dictionary::pairs() {
+    std::vector<std::pair<GeneralTypeToken,GeneralTypeToken>> ret;
+    for(size_t i = 0; i < keys().size(); ++i) {
+        ret.push_back(std::make_pair(keys()[i],values()[i]));
+    }
+    return ret;
+}
+
+const std::vector<GeneralTypeToken>& Dictionary::keys() const {
+    return i_keys;
+}
+const std::vector<GeneralTypeToken>& Dictionary::values() const {
+    return i_values;
+}
+std::vector<GeneralTypeToken>& Dictionary::keys() {
+    return i_keys;
+}
+std::vector<GeneralTypeToken>& Dictionary::values() {
+    return i_values;
+}
+
+bool Dictionary::has(const GeneralTypeToken gtt) const {
+    for(size_t i = 0; i < keys().size(); ++i) {
+        if(keys()[i] == gtt) {
+            return true;
+        }
+    }
+    return false;
+}
+
+GeneralTypeToken& Dictionary::operator[](GeneralTypeToken gtt) {
+    for(size_t i = 0; i < keys().size(); ++i) {
+        if(keys()[i] == gtt) {
+            return values()[i];
+        }
+    }
+
+    keys().push_back(gtt);
+    values().push_back(general_null);
+    return values().back();
+}
+
 std::tuple<std::vector<std::string>,std::vector<Variable::Type>> MeowScript::tools::parse_function_params(Token context) {
     if(brace_check(context,'(',')')) {
         context.content.erase(context.content.begin());

@@ -30,4 +30,5 @@ add_executable(${BINARY} ${SOURCE})
 # can be ignored if it errors
 if(UNIX)
 target_compile_options(${BINARY} PRIVATE -g -rdynamic -Wl,-E -ldl -fPIC)
+add_compile_options(-g -rdynamic -Wl,-E -ldl -fPIC)
 endif()

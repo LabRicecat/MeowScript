@@ -7,9 +7,34 @@
 #include "commands.hpp"
 #include "tools.hpp"
 
+#include <unordered_map>
+
 MEOWSCRIPT_HEADER_BEGIN
 
 General_type get_type(Token context, CommandArgReqirement expected = car_Any);
+
+struct GeneralTypeToken;
+
+struct Dictionary {
+private:
+    std::vector<GeneralTypeToken> i_keys;
+    std::vector<GeneralTypeToken> i_values;
+public:
+    const std::vector<std::pair<GeneralTypeToken,GeneralTypeToken>> pairs() const;
+    std::vector<std::pair<GeneralTypeToken,GeneralTypeToken>> pairs();
+
+    const std::vector<GeneralTypeToken>& keys() const;
+    const std::vector<GeneralTypeToken>& values() const;
+    std::vector<GeneralTypeToken>& keys();
+    std::vector<GeneralTypeToken>& values();
+
+    bool has(const GeneralTypeToken gtt) const;
+
+    GeneralTypeToken& operator[](GeneralTypeToken gtt);
+};
+
+Dictionary dic_from_token(Token tk);
+Token dic_to_token(Dictionary dic);
 
 struct Variable {
 private:
@@ -17,12 +42,14 @@ private:
         long double number = 0.0;
         Token string;
         List list;
+        Dictionary dict;
     };
 public:
     enum class Type {
         Number,
         String,
         List,
+        Dictionary,
         UNKNOWN, // Dont use
         ANY, // Also don't use
         VOID, // Guess what
@@ -33,9 +60,10 @@ public:
     Variable(List list) {type = Type::List; storage.list = list;}
     Variable(Token string) {type = Type::String; storage.string = string; storage.string.in_quotes = true;}
     Variable(long double number) {type = Type::Number; storage.number = number;}
+    Variable(Dictionary dic) {type = Variable::Type::Dictionary, storage.dict = dic;}
     Variable() {}
 
-    std::string to_string();
+    std::string to_string() const;
 
     bool fixed_type = false;
     bool constant = false;
@@ -80,6 +108,10 @@ struct GeneralTypeToken {
                 source = var.storage.list.to_string();
                 type = General_type::LIST;
                 break;
+            case Variable::Type::Dictionary:
+                source = dic_to_token(var.storage.dict);
+                type = General_type::DICTIONARY;
+                break;
             default:
                 type = General_type::VOID;
         }
@@ -87,7 +119,7 @@ struct GeneralTypeToken {
     GeneralTypeToken() {}
 
     Variable to_variable() const;
-    std::string to_string();
+    std::string to_string() const;
 
     // casts
     GeneralTypeToken(long double i) {
@@ -109,6 +141,24 @@ struct GeneralTypeToken {
         source = str;
         source.in_quotes = true;
         type = General_type::STRING;
+    }
+    GeneralTypeToken(Dictionary dict) {
+        source = dic_to_token(dict);
+        source.in_quotes = false;
+        type = General_type::DICTIONARY;
+    }
+
+    bool operator==(GeneralTypeToken gtt) {
+        return gtt.type == type && gtt.source == source;
+    }
+    bool operator==(const GeneralTypeToken gtt) const {
+        return gtt.type == type && gtt.source == source;
+    }
+    bool operator!=(GeneralTypeToken gtt) {
+        return !operator==(gtt);
+    }
+    bool operator!=(const GeneralTypeToken gtt) const {
+        return !operator==(gtt);
     }
 };
 

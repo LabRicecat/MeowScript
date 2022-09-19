@@ -64,7 +64,7 @@ static std::vector<Command> commandlist = {
     {"new",
         {
             car_Name,
-            car_Number | car_String | car_List | car_PlaceHolderAble,
+            car_Number | car_String | car_List | car_Dictionary | car_PlaceHolderAble,
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
         new_variable(args[0].source.content,tools::check4placeholder(args[1]).to_variable());
@@ -73,7 +73,7 @@ static std::vector<Command> commandlist = {
     {"const",
         {
             car_Name,
-            car_Number | car_String | car_List | car_PlaceHolderAble,
+            car_Number | car_String | car_List | car_Dictionary | car_PlaceHolderAble,
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
         Variable v = tools::check4placeholder(args[1]).to_variable();
@@ -84,7 +84,7 @@ static std::vector<Command> commandlist = {
     {"set",
         {
             car_Name,
-            car_Number | car_String | car_List | car_PlaceHolderAble,
+            car_Number | car_String | car_List | car_Dictionary | car_PlaceHolderAble,
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
         set_variable(args[0].source.content,tools::check4placeholder(args[1]).to_variable());
@@ -255,7 +255,7 @@ static std::vector<Command> commandlist = {
         {
             car_Name,
             car_Any,
-            car_Number | car_String | car_List | car_PlaceHolderAble,
+            car_Number | car_String | car_List | car_Dictionary | car_PlaceHolderAble,
             car_Compound
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
