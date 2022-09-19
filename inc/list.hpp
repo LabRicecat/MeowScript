@@ -7,7 +7,7 @@
 #include <vector>
 #include <unordered_map>
 
-MEOWSCRIPT_HEADER_BEGIN
+namespace MeowScript {
 
 struct Variable;
 
@@ -60,6 +60,6 @@ Method<Dictionary>* get_dictionary_method(std::string name);
 bool is_dictionary_method(std::string name);
 
 
-MEOWSCRIPT_HEADER_END
+}
 
 #endif

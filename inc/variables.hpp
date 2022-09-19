@@ -164,6 +164,15 @@ struct GeneralTypeToken {
 
 namespace tools {
     std::tuple<std::vector<std::string>,std::vector<Variable::Type>> parse_function_params(Token context);
+
+    inline std::map<std::string,GeneralTypeToken> replaces = {
+        {"pi",GeneralTypeToken(3.14159)},
+        {"phi",GeneralTypeToken(1.61803)},
+        {"e",GeneralTypeToken(2.71828)}
+    };
+
+    GeneralTypeToken check4replace(GeneralTypeToken token);
+    Token check4replace(Token token);
 }
 
 inline const GeneralTypeToken general_null = GeneralTypeToken{};

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.9)
 project(meow-script 
-    VERSION 0.1.0 
+    VERSION 1.2.0 
     LANGUAGES CXX
     DESCRIPTION "An easy extendable scripting language"
 )
@@ -29,6 +29,6 @@ add_executable(${BINARY} ${SOURCE})
 
 # can be ignored if it errors
 if(UNIX)
-target_compile_options(${BINARY} PRIVATE -g -rdynamic -Wl,-E -ldl -fPIC)
-add_compile_options(-g -rdynamic -Wl,-E -ldl -fPIC)
+target_compile_options(${BINARY} PUBLIC -g -rdynamic -Wl,-E -ldl -fPIC -Wl,--export-dynamic)
+add_compile_options(-g -rdynamic -Wl,-E -ldl -fPIC -Wl,--export-dynamic)
 endif()

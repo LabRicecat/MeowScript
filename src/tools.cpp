@@ -232,6 +232,23 @@ GeneralTypeToken MeowScript::tools::check4expression(GeneralTypeToken token) {
     return token;
 }
 
+GeneralTypeToken MeowScript::tools::check4replace(GeneralTypeToken token) {
+    if(token.type == General_type::NAME) {
+        if(replaces.count(token.source.content) != 0) {
+            return replaces[token.source.content];
+        }
+        return token;
+    }
+    return token;
+}
+
+Token MeowScript::tools::check4replace(Token token) {
+    if(replaces.count(token.content) != 0) {
+        return replaces[token.content].to_string();
+    }
+    return token;
+}
+
 Token MeowScript::tools::remove_unneeded_chars(Token token) {
     if(token.in_quotes) {
         return token;

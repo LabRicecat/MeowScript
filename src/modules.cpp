@@ -41,7 +41,13 @@ void MeowScript::load_all_modules() {
     }
 }
 
+static bool first_load = true;
+
 bool MeowScript::load_module(std::string name) {
+#ifndef MEOWSCRIPT_USE_LINUX
+    dlopen(NULL,RTLD_NOW|RTLD_GLOBAL);
+#endif
+    first_load = false;
     for(auto i : fs::recursive_directory_iterator(MEOWSCRIPT_MODULE_PATH)) {
         if(i.path().filename() == name && i.path().extension() == MEOWSCRIPT_SHARED_OBJECT_EXT) {
             std::string pth = i.path().string();

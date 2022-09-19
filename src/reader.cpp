@@ -579,6 +579,10 @@ std::vector<Line> MeowScript::lex_text(std::string source) {
         tm_ret.push_back(ln);
     }
     for(auto& i : tm_ret) {
+        for(auto& j : i.source)
+            j = tools::check4replace(j);
+    }
+    for(auto& i : tm_ret) {
         for(size_t j = 0; j < i.source.size(); ++j) {
             if(j != 0 && j != i.source.size()-1
                  && i.source[j].content == "." 
@@ -591,7 +595,6 @@ std::vector<Line> MeowScript::lex_text(std::string source) {
             }
         }
     }
-
 
     return tm_ret;
 }
