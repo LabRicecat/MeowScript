@@ -82,7 +82,7 @@ std::string MeowScript::get_username() {
     GetUserName(username,&size);
     std::string tmp(username,size-1);
     
-    return wstring2string(tmp);
+    return tmp;
 }
 
 void MeowScript::load_all_modules() {
@@ -100,8 +100,8 @@ void MeowScript::load_all_modules() {
 bool MeowScript::load_module(std::string name) {
     for(auto i : fs::recursive_directory_iterator(MEOWSCRIPT_MODULE_PATH)) {
         if(i.path().filename() == name) {
-            auto pth = string2wstring(i.path().string());
-            auto h = LoadLibrary(pth.c_str());
+            //auto pth = string2wstring(i.path().string());
+            auto h = LoadLibrary(i.path().string().c_str());
             if(h) {
                 throw errors::MWSMessageException{"Error while loading module!",0};
             }
