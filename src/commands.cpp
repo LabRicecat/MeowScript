@@ -535,7 +535,7 @@ static std::vector<Command> commandlist = {
             if(!fs::exists(pth2)) {
                 throw errors::MWSMessageException{"Trying to import unknown file: \"" + pth.string() + "\"",global::get_line()};
             }
-            return run_file(pth2,true,false,-1,{},pth2,false,true);
+            return run_file(pth2.string(),true,false,-1,{},pth2,false,true);
         }
 
         return run_file(pth,true,false,-1,{},pth,false,true);

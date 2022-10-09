@@ -39,9 +39,14 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
 
         std::vector<General_type> identf_line;
         identf_line.push_back(get_type(lines[i].source[0]));
+        global::add_trace(global::get_line(),tools::until_newline(lines[i].source),global::include_path.top().string());
+
+        while(identf_line.front() == General_type::COMPOUND) {
+            lines[i].source[0] = tools::check4compound(lines[i].source[0]).to_string();
+            identf_line.front() = get_type(lines[i].source[0]);
+        }
 
         std::string name = lines[i].source[0];
-        global::add_trace(global::get_line(),tools::until_newline(lines[i].source),global::include_path.top());
 
         if(identf_line.front() == General_type::COMMAND) {
             Command* command = get_command(name);

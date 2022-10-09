@@ -30,7 +30,7 @@ argument_list MeowScript::tools::parse_argument_list(Token context) {
                 --global::in_argument_list;
                 return argument_list();
             }
-            ret.push_back(GeneralTypeToken(tk));
+            ret.push_back(tools::check4replace(tk));
 
             tk.content = "";
             tk.in_quotes = false;
@@ -52,7 +52,7 @@ argument_list MeowScript::tools::parse_argument_list(Token context) {
         }
     }
     if(tk.content != "" || tk.in_quotes) {
-        ret.push_back(GeneralTypeToken(tk));
+        ret.push_back(tools::check4replace(tk));
     }
     --global::in_argument_list;
     if(in_q || in_br) {

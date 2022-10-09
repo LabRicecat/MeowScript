@@ -95,8 +95,8 @@ std::string MeowScript::get_username() {
 void MeowScript::load_all_modules() {
     for(auto i : fs::recursive_directory_iterator(MEOWSCRIPT_MODULE_PATH)) {
         if(i.path().extension() == ".dll") {
-            auto pth = string2wstring(i.path().string());
-            auto h = LoadLibrary(pth.c_str());
+            // auto pth = string2wstring(i.path().string());
+            auto h = LoadLibrary(i.path().string().c_str());
             if(h) {
                 throw errors::MWSMessageException{"Error while loading module!",0};
             }
