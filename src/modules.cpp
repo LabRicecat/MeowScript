@@ -75,19 +75,12 @@ static std::string wstring2string(std::wstring wstr) {
 
     return converterX.to_bytes(wstr);
 }
-static std::wstring string2wstring(std::string str) {
-    using convert_typeX = std::codecvt_utf8<wchar_t>;
-    std::wstring_convert<convert_typeX,wchar_t> converterX;
-
-    return converterX.to_bytes(str);
-}
 
 std::string MeowScript::get_username() {
-    TCHAR username[UNLEN+1];
+    char username[UNLEN+1];
     DWORD size = UNLEN +1;
-    GetUserName((TCHAR*)username,&size);
-
-    std::wstring tmp(username,size-1);
+    GetUserName(username,&size);
+    std::string tmp(username,size-1);
     
     return wstring2string(tmp);
 }

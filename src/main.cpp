@@ -98,7 +98,7 @@ int main(int argc, char** argv) {
                 MeowScript::global::args.push_back(var);
             }
             fs::path from = fs::path(std::string(argv[1]));
-            MeowScript::global::origin_file = from;
+            MeowScript::global::origin_file = from.string();
             MeowScript::run_file(std::string(argv[1]),true,false,-1,{},from);
         }
         catch(MeowScript::errors::MWSMessageException& err) {

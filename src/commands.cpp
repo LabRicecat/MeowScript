@@ -538,7 +538,7 @@ static std::vector<Command> commandlist = {
             return run_file(pth2.string(),true,false,-1,{},pth2,false,true);
         }
 
-        return run_file(pth,true,false,-1,{},pth,false,true);
+        return run_file(pth.string(),true,false,-1,{},pth,false,true);
     }},
 
     {"event",
@@ -553,7 +553,7 @@ static std::vector<Command> commandlist = {
         }
 
         Event event;
-        event.from_file = global::include_path.top();
+        event.from_file = global::include_path.top().string();
         if(args[0].to_string() == "public") {
             event.visibility = Event::Visibility::PUBLIC;
         }

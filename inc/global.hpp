@@ -38,6 +38,7 @@ namespace global {
     fs::path include_parent_path();
 }
 
+
 MEOWSCRIPT_HEADER_END
 
 #endif
