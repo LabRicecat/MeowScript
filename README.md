@@ -11,6 +11,8 @@ The requirements are:
 -- Msys2  
 -- MinGW
 
+**Important: Windows build is currenlty officially NOT working!**
+
 ## Installing
 Execute this commands in your shell:
 ```
