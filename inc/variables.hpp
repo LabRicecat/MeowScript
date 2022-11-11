@@ -36,6 +36,10 @@ public:
 Dictionary dic_from_token(Token tk);
 Token dic_to_token(Dictionary dic);
 
+struct Scope;
+// Also defined in object.hpp
+using Object = Scope*;
+
 struct Variable {
 private:
     struct stor_ {
@@ -43,6 +47,7 @@ private:
         Token string;
         List list;
         Dictionary dict;
+        int obj;
     };
 public:
     enum class Type {
@@ -50,9 +55,11 @@ public:
         String,
         List,
         Dictionary,
+        Object,
         UNKNOWN, // Dont use
         ANY, // Also don't use
         VOID, // Guess what
+        OUT_OF_RANGE,
     }type = Type::UNKNOWN;
 
     stor_ storage;
@@ -61,6 +68,7 @@ public:
     Variable(Token string) {type = Type::String; storage.string = string; storage.string.in_quotes = true;}
     Variable(long double number) {type = Type::Number; storage.number = number;}
     Variable(Dictionary dic) {type = Variable::Type::Dictionary, storage.dict = dic;}
+    Variable(Type ty) : type(ty) {}
     Variable() {}
 
     std::string to_string() const;
@@ -72,13 +80,30 @@ public:
     bool set(std::string str);
     bool set(List list);
     bool set(long double num);
+    bool set(Variable var);
 
     bool operator==(Variable v) {
         return this->type == v.type && this->to_string() == v.to_string();
     }
 };
 
+bool matches(Variable::Type type1, General_type type2);
+bool matches(std::vector<Variable::Type> types, General_type gtype);
+
 General_type var_t2general_t(Variable::Type type);
+
+template<typename Tleft,typename Tright>
+struct mws_either {
+    Tleft left;
+    Tright right;
+    bool ileft = true;
+
+    mws_either(Tleft l) {operator=(l);}
+    mws_either(Tright r) {operator=(r);}
+
+    void operator=(Tleft l) {left = l; ileft = true;}
+    void operator=(Tright r) {right = r; ileft = false;}
+};
 
 struct GeneralTypeToken {
     Token source;
@@ -149,6 +174,9 @@ struct GeneralTypeToken {
     }
 
     bool operator==(GeneralTypeToken gtt) {
+        /*if(gtt.type != General_type::OBJECT) {
+            return gtt.type == type && gtt.source == source;
+        }*/
         return gtt.type == type && gtt.source == source;
     }
     bool operator==(const GeneralTypeToken gtt) const {

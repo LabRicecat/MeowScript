@@ -5,3 +5,6 @@ build
 bin
 .vscode
 meow-script
+stdlib/threading.cpp
+test.c
+testtt.mws

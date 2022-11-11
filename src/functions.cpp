@@ -12,15 +12,17 @@ Variable MeowScript::Function::run(std::vector<Variable> args) {
     
     std::map<std::string,Variable> arg_map;
     for(size_t i = 0; i < args.size(); ++i) {
-        if(this->args[i] != Variable::Type::UNKNOWN && args[i].type != this->args[i]) {
+        if(this->args[i] != Variable::Type::UNKNOWN && this->args[i] != Variable::Type::ANY && args[i].type != this->args[i]) {
             std::string err = "Invalid argument! (" + std::to_string(i) + ")\n\t- Expected: " + var_t2token(this->args[i]).content + "\n\t- But got: " + var_t2token(args[i].type).content;
             throw errors::MWSMessageException{err,global::get_line()};
         }
 
         arg_map[arg_names[i]] = args[i]; 
     }
-
+    int saved_istruct = global::in_struct;
+    global::in_struct = 0;
     GeneralTypeToken gtt_ret = run_lexed(body,true,true,scope_idx,arg_map,this->file);
+    global::in_struct = saved_istruct;
     if(gtt_ret.type != General_type::VOID && gtt_ret.type != General_type::UNKNOWN) {
         Variable var_ret;
         try {

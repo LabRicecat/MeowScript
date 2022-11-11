@@ -180,11 +180,16 @@ std::tuple<std::vector<std::string>,std::vector<Variable::Type>> MeowScript::too
             if(i[1].content != "::") {
                 throw errors::MWSMessageException{"Invalid argument format!",global::get_line()};
             }
-            if(!is_valid_var_t(i[2])) {
-                throw errors::MWSMessageException{i[2].content + " is not a known VariableType or class!",global::get_line()};
+            if(!is_object(i[2]) && !is_valid_var_t(i[2])) {
+                throw errors::MWSMessageException{i[2].content + " is not a known VariableType or struct!",global::get_line()};
             }
             l1.push_back(i[0]);
-            l2.push_back(token2var_t(i[2]));
+            if(is_object(i[2])) {
+                // TODO: think of solution
+            }
+            else {
+                l2.push_back(token2var_t(i[2]));
+            }
         }
         else {
             throw errors::MWSMessageException{"Invalid argument format!",global::get_line()};
@@ -206,11 +211,12 @@ GeneralTypeToken MeowScript::tools::check4var(GeneralTypeToken token) {
 GeneralTypeToken MeowScript::tools::check4compound(GeneralTypeToken token) {
     if(token.type == General_type::COMPOUND) {
         token.source.content.erase(token.source.content.begin());
-        //token.source = remove_unneeded_chars(token.source);
         token.source.content.erase(token.source.content.begin()+token.source.content.size()-1);
-        //token.source = remove_unneeded_chars(token.source);
         ++global::in_compound;
+        int saved_istruct = global::in_struct;
+        global::in_struct = 0;
         GeneralTypeToken ret = run_text(token.source,false);
+        global::in_struct = saved_istruct;
         --global::in_compound;
         //if(ret.type == General_type::VOID) {
         //    throw errors::MWSMessageException{"Compound did not return anything!",global::get_line()};

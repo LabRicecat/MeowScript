@@ -1,6 +1,8 @@
 #include "../inc/runner.hpp"
 #include "../inc/tools.hpp"
 #include "../inc/modules.hpp"
+#include "../inc/objects.hpp"
+#include "../inc/expressions.hpp"
 
 MEOWSCRIPT_SOURCE_FILE
 
@@ -48,28 +50,68 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
 
         std::string name = lines[i].source[0];
 
+        std::string str_line;
+        for(auto i : lines[i].source) {
+            for(size_t j = 0; j < i.content.size(); ++j) {
+                if(i.content[j] == '\"') {
+                    i.content.insert(i.content.end() - 2 - j,'\\');
+                    ++j;
+                }
+            }
+            if(i.in_quotes) {
+                i = "\"" + i.content + "\"";
+            }
+            str_line += " " + i.content;
+        }
+        try { // will also not recognise it if something else fails
+            Variable result = parse_expression("(" + str_line + ")");
+            ret = result;
+        }
+        catch(...) {
+        
         if(identf_line.front() == General_type::COMMAND) {
-            Command* command = get_command(name);
+            auto cp = lines[i].source;
+            if(cp.size() != 0)
+                cp.erase(cp.begin());
+            Command* command = get_command_overload(name,cp);
 
             std::vector<GeneralTypeToken> args;
             identf_line.erase(identf_line.begin());
-            if(command->args.size() != lines[i].source.size()-1) {
+            if(command == nullptr) {
+                std::string err_msg = "No overload of command \"" + name + "\" matches arglist!\n\t- Got: [";
+                for(size_t k = 0; k < cp.size(); ++k) {
+                    err_msg += (k == 0 ? "":", ") + general_t2token(get_type(cp[k])).content;
+                }
+                throw errors::MWSMessageException(err_msg + "]",global::get_line());
+            }
+            if((command->args.size() == 0 || !(command->args.back().matches(car_Ongoing))) && command->args.size() != lines[i].source.size()-1) {
                 std::string err = "Too many/few arguments for command: " + command->name + "\n\t- Expected: " + std::to_string(command->args.size()) + "\n\t- But got: " + std::to_string(lines[i].source.size()-1);
                 throw errors::MWSMessageException{err,global::get_line()};
             }
 
-            for(size_t j = 0; j < command->args.size(); ++j) {
-                auto identf = get_type(lines[i].source[j+1],command->args[j]);
-                if(!command->args[j].matches(identf)) {
-                    std::string err_msg = "Invalid argument:\n\t- Expected: [";
-                    for(size_t k = 0; k < command->args[j].carry.size(); ++k) {
-                        err_msg += (k == 0 ? "":",") + general_t2token(General_type(command->args[j].carry[k]-1)).content;
-                    }
-                    err_msg += "]\n\t- But got: " + general_t2token(identf).content + " (" + lines[i].source[j+1].content + ")";
-                    throw errors::MWSMessageException(err_msg,global::get_line());
+            bool f_ongoing = false;
+            for(size_t j = 0; j < cp.size(); ++j) {
+                if(f_ongoing) {
+                    args.push_back(GeneralTypeToken(cp[j]));
                 }
                 else {
-                    args.push_back(GeneralTypeToken(lines[i].source[j+1]));
+                    auto identf = get_type(cp[j],command->args[j]);
+                    if(command->args[j].matches(car_Ongoing)) {
+                        f_ongoing = true;
+                        args.push_back(GeneralTypeToken(cp[j]));
+                        continue;
+                    }
+                    if(!command->args[j].matches(identf)) {
+                        std::string err_msg = "Invalid argument:\n\t- Expected: [";
+                        for(size_t k = 0; k < command->args[j].carry.size(); ++k) {
+                            err_msg += (k == 0 ? "":",") + general_t2token(General_type(command->args[j].carry[k]-1)).content;
+                        }
+                        err_msg += "]\n\t- But got: " + general_t2token(identf).content + " (" + cp[j].content + ")";
+                        throw errors::MWSMessageException(err_msg,global::get_line());
+                    }
+                    else {
+                        args.push_back(GeneralTypeToken(cp[j]));
+                    }
                 }
             }
 
@@ -83,7 +125,8 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
             if(identf_line.size() > 3 || identf_line.size() < 2) {
                 throw errors::MWSMessageException{"Too many/few arguments for primitiv function call!\n- Call Sytax: name(<args>)[!]",global::get_line()};
             }
-            if(identf_line[1] != General_type::ARGUMENTLIST) {
+            auto arglist = get_type(lines[i].source[1],General_type::ARGUMENTLIST);
+            if(arglist != General_type::ARGUMENTLIST) {
                 std::string err = "Unexpected token after function call:\n\t- Expected: Argumentlist\n\t- But got: " + (identf_line.size() != 1 ? general_t2token(identf_line[1]).content : "VOID");
                 throw errors::MWSMessageException{err,global::get_line()};
             }
@@ -287,10 +330,10 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
             }
 
             if(identf_line.size() < 3 || lines[i].source[1].content != ".") {
-                throw errors::MWSMessageException{"Invalid string-method call!\n\t- Expected: string.method <args>...",global::get_line()};
+                throw errors::MWSMessageException{"Invalid dictionary-method call!\n\t- Expected: object.method <args>...",global::get_line()};
             }
             auto idf_first = identf_line.front();
-            identf_line.erase(identf_line.begin()); // string
+            identf_line.erase(identf_line.begin()); // dictionary
             identf_line.erase(identf_line.begin()); // .
 
             Method<Dictionary>* method = get_dictionary_method(lines[i].source[2].content);
@@ -329,10 +372,115 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
                 get_variable(lines[i].source[0])->storage.dict = dic;
             }
         }
+        /*else if(identf_line.front() == General_type::STRUCT) {
+            for(size_t j = 1; j < lines[i].source.size(); ++j) {
+                identf_line.push_back(get_type(lines[i].source[j]));
+            }
+            if(identf_line.size() != 3 || identf_line[1] != General_type::NAME || identf_line[2] != General_type::ARGUMENTLIST) {
+                throw errors::MWSMessageException{"Invalid pattern for a struct initialisation!\n\t- Pattern: <struct> <name> (<args>)",global::get_line()};
+            }
+            Token struct_name = lines[i].source[0];
+            Token instance_name = lines[i].source[1];
+
+            argument_list args = tools::parse_argument_list(lines[i].source[2]);
+            std::vector<Variable> call_args;
+            for(auto i : args)
+                call_args.push_back(i.to_variable());
+
+            int scope_idx = get_new_scope();
+            Object obj = &scopes[scope_idx];
+            Object struc = get_struct(struct_name);
+            obj->functions = struc->functions;
+            obj->vars = struc->vars;
+            obj->parent = struc->parent;
+            obj->objects = struc->objects;
+            obj->structs = struc->structs;
+            
+            if(!add_object(instance_name,obj)) {
+                throw errors::MWSMessageException{"Can't redefine struct: " + struct_name.content,global::get_line()};
+            }
+
+            // constructor call
+            if(has_method(obj,struct_name)) {
+                run_method(obj,struct_name,call_args);
+            }
+        }*/
+        else if(identf_line.front() == General_type::OBJECT) {
+            for(size_t j = 1; j < lines[i].source.size(); ++j) {
+                identf_line.push_back(get_type(lines[i].source[j]));
+            }
+
+            if(identf_line.size() < 3 || lines[i].source[1].content != ".") {
+                throw errors::MWSMessageException{"Invalid object-method call!\n\t- Expected: object.method <args>...",global::get_line()};
+            }
+            auto idf_first = identf_line.front();
+            identf_line.erase(identf_line.begin()); // object
+            identf_line.erase(identf_line.begin()); // .
+
+            Object obj = get_object(lines[i].source[0].content);
+            Token method_name = lines[i].source[2];
+            Function* method = get_method(obj,method_name);
+            if(method == nullptr) {
+                throw errors::MWSMessageException{"Unknown object method: " + method_name.content,global::get_line()};
+            }
+
+            std::vector<Variable> args; // TODO: add boring error handling
+            std::vector<GeneralTypeToken> arglist = tools::parse_argument_list(lines[i].source[3]);
+            if(lines[i].source.size() != 4) {
+                throw errors::MWSMessageException{"Invalid object-method call!\n\t- Expected: object.method <args>...",global::get_line()};
+            }
+            if(arglist.size() != method->args.size()) {
+                std::string err = "Too many/few arguments for object method: " + method_name.content + "\n\t- Expected: " + std::to_string(method->args.size()) + "\n\t- But got: " + std::to_string(lines[i].source.size()-3);
+                throw errors::MWSMessageException{err,global::get_line()};
+            }
+
+            for(size_t j = 0; j < method->args.size(); ++j) {
+                Variable garg = arglist[j].to_variable(); 
+                auto identf = garg.type;
+                if(method->args[j] != Variable::Type::UNKNOWN && method->args[j] != Variable::Type::ANY && method->args[j] != identf) {
+                    std::string err_msg = "Invalid argument:\n\t- Expected: " + var_t2token(method->args[j]).content + "\n\t- But got: " + general_t2token(get_type(lines[i].source[j+3].content)).content + " (" + lines[i].source[j+3].content + ")";
+                    throw errors::MWSMessageException(err_msg,global::get_line());
+                }
+                else {
+                    args.push_back(garg);
+                }
+            }
+
+            ret = run_method(obj,method_name,args);
+        }
+        else if(identf_line.front() == General_type::EXPRESSION) {
+            for(size_t j = 1; j < lines[i].source.size(); ++j) {
+                identf_line.push_back(get_type(lines[i].source[j]));
+            }
+            bool shadow_return = false;
+            if(identf_line.size() > 2) {
+                std::string err = "Invalid start of line!\n\t- Expected: [Command,Function,Module,String,List,Dictionary,Object,Struct]\n\t- But got: " + general_t2token(identf_line.front()).content + " (" + lines[i].source[0].content + ")\n"; 
+                throw errors::MWSMessageException{err,global::get_line()};
+            }
+            if(identf_line.size() == 2) {
+                if(identf_line[1] != General_type::OPERATOR) {
+                    std::string err = "Unexpected token after expression:\n\t- Expected: \"!\"\n\t- But got: " + general_t2token(identf_line[1]).content;
+                    throw errors::MWSMessageException{err,global::get_line()};
+                }
+                if(lines[i].source[1].content != "!") {
+                    std::string err = "Unexpected token after expression:\n\t- Expected: \"!\"\n\t- But got: " + lines[i].source[2].content;
+                    throw errors::MWSMessageException{err,global::get_line()};
+                }
+                shadow_return = true;
+            }
+            if(shadow_return) {
+                parse_expression(lines[i].source[0]);
+            }
+            else {
+                ret = parse_expression(lines[i].source[0]);
+            }
+        }
         else {
-            std::string err = "Invalid start of line!\n\t- Expected: [Command,Function,Module,String,List,Dictionary]\n\t- But got: " + general_t2token(identf_line.front()).content + " (" + lines[i].source[0].content + ")\n"; 
+            std::string err = "Invalid start of line!\n\t- Expected: [Command,Function,Module,String,List,Dictionary,Object,Struct]\n\t- But got: " + general_t2token(identf_line.front()).content + " (" + lines[i].source[0].content + ")\n"; 
             throw errors::MWSMessageException{err,global::get_line()};
         }
+
+        } // catch statement
 
         global::pop_trace();
 

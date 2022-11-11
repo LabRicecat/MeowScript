@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
         print_help();
         return 0;
     }
-
+    
     std::string arg = std::string(argv[1]);
 
     std::vector<std::string> args;

@@ -118,8 +118,10 @@ enum class General_type {
     EVENT,
     KEYWORD,
     DICTIONARY,
+    OBJECT,
     UNKNOWN,
-    VOID
+    VOID,
+    OUT_OF_RANGE
 };
 
 MEOWSCRIPT_HEADER_END

@@ -36,6 +36,8 @@ namespace global {
     inline std::string origin_file = "";
 
     fs::path include_parent_path();
+
+    inline int in_struct = 0;
 }
 
 

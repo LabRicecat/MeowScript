@@ -163,6 +163,8 @@ bool MeowScript::is_valid_var_t(Token context) {
         "String",
         "List",
         "Dictionary",
+        "Struct",
+        "Object",
         "Any",
         "Void",
     };
@@ -191,6 +193,8 @@ bool MeowScript::is_valid_general_t(Token context) {
         "Event",
         "Keyword",
         "Dictionary",
+        "Struct",
+        "Object",
         "Unknown",
         "Void"
     };
@@ -394,7 +398,7 @@ bool MeowScript::brace_check(Token context, char open, char close) {
                 until_nl = true;
             }
         }
-        else if(is_newline(context.content[i]) && !in_quote && !in_brace_until_quote) {
+        else if(is_newline(context.content[i]) && (until_nl && !context.content[i] == ';') && !in_quote && !in_brace_until_quote) {
             until_nl = false;
         }
         
@@ -433,7 +437,7 @@ std::vector<Line> MeowScript::lex_text(std::string source) {
             tmp_line.line_count = line_counter;
             until_nl = false;
         }
-        else if(is_newline(source[i]) && !until_eoc) {
+        else if(is_newline(source[i]) && (until_nl && !source[i] == ';') && !until_eoc) {
             tmp_token.content += source[i];
             ++line_counter;
             until_nl = false;

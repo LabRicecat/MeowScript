@@ -13,16 +13,19 @@ set(SOURCE
     src/global.cpp 
     src/main.cpp 
     src/modules.cpp 
+    src/objects.cpp
     src/patterns.cpp 
     src/reader.cpp
     src/runner.cpp
     src/scopes.cpp
     src/tools.cpp 
     src/variables.cpp 
+    
 
     stdlib/filesystem.cpp 
     stdlib/math.cpp 
     stdlib/os.cpp 
+    stdlib/threading.cpp 
     )
 
 add_executable(${BINARY} ${SOURCE})

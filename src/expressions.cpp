@@ -9,14 +9,14 @@ bool MeowScript::is_operator(std::string name) {
     return operators.count(name) != 0;
 }
 
-Operator* MeowScript::get_operator(std::string name, Variable::Type left, Variable::Type right) {
+Operator* MeowScript::get_operator(std::string name, General_type left, General_type right) {
     if(!is_operator(name)) {
         return nullptr;
     }
     auto& ops = operators[name];
 
     for(auto& i : ops) {
-        if(i.req_left == left && i.req_right == right) {
+        if((i.req_left == left || i.req_left == General_type::UNKNOWN && (i.req_right == right || i.req_right == General_type::UNKNOWN))) {
             return &i;
         }
     }
@@ -64,7 +64,7 @@ Variable MeowScript::parse_expression(std::string str) {
 
     ++global::in_expression;
     std::stack<std::string> ops;
-    std::stack<Variable> st;
+    std::stack<GeneralTypeToken> st;
     for(size_t i = 0; i < lexed.size(); ++i) {
         if(get_type(lexed[i]) == General_type::EXPRESSION) {
             st.push(parse_expression(lexed[i]));
@@ -76,13 +76,25 @@ Variable MeowScript::parse_expression(std::string str) {
             }
             auto op = operators[lexed[i].content];
             while(!ops.empty() && operators[ops.top()][0].priority >= op[0].priority) {
-                Variable right = st.top(); st.pop();
-                Variable left = st.top(); st.pop();
+                GeneralTypeToken right = st.top(); st.pop();
+                GeneralTypeToken left = st.top(); st.pop();
 
-                Operator* roper = get_operator(ops.top(),left.type,right.type);
+                Operator* roper;
+                roper = get_operator(ops.top(),left.type,right.type);
+                if(roper == nullptr) {
+                    GeneralTypeToken l2 = tools::check4placeholder(left);
+                    GeneralTypeToken r2 = tools::check4placeholder(right);
+                    roper = get_operator(ops.top(),l2.type,right.type);
+                    if(roper == nullptr) {
+                        roper = get_operator(ops.top(),left.type,r2.type);
+                        if(roper == nullptr) {
+                            roper = get_operator(ops.top(),l2.type,r2.type);
+                        }
+                    }
+                }
                 if(roper == nullptr) {
                     --global::in_expression;
-                    throw errors::MWSMessageException{"No overload of operator \"" + ops.top() + "\" matches the types: " + var_t2token(left.type).content + " | " + var_t2token(right.type).content,global::get_line()};
+                    throw errors::MWSMessageException{"No overload of operator \"" + ops.top() + "\" matches the types: " + general_t2token(left.type).content + " | " + general_t2token(right.type).content,global::get_line()};
                 }
 
                 st.push(roper->parse(left,right));
@@ -91,25 +103,51 @@ Variable MeowScript::parse_expression(std::string str) {
             ops.push(lexed[i].content);
         }
         else {
-            st.push(tools::check4placeholder(lexed[i]).to_variable());
+            st.push(GeneralTypeToken(lexed[i]));
         }
     }
 
 
     while(!ops.empty()) {
-        Variable right = st.top(); st.pop();
-        Variable left = st.top(); st.pop();
+        GeneralTypeToken right = st.top(); st.pop();
+        GeneralTypeToken left = st.top(); st.pop();
 
-        Operator* roper = get_operator(ops.top(),left.type,right.type);
+        Operator* roper;
+        roper = get_operator(ops.top(),left.type,right.type);
+        if(roper == nullptr) {
+            GeneralTypeToken l2 = tools::check4placeholder(left);
+            GeneralTypeToken r2 = tools::check4placeholder(right);
+            roper = get_operator(ops.top(),l2.type,right.type);
+            if(roper == nullptr) {
+                roper = get_operator(ops.top(),left.type,r2.type);
+                if(roper == nullptr) {
+                    roper = get_operator(ops.top(),l2.type,r2.type);
+                    right = r2;
+                    left = l2;
+                }
+                else {
+                    right = r2;
+                }
+            }
+            else {
+                left = l2;
+            }
+        }
         if(roper == nullptr) {
             --global::in_expression;
-            throw errors::MWSMessageException{"No overload of operator \"" + ops.top() + "\" matches the types: " + var_t2token(left.type).content + " | " + var_t2token(right.type).content,global::get_line()};
+            throw errors::MWSMessageException{"No overload of operator \"" + ops.top() + "\" matches the types: " + general_t2token(left.type).content + " | " + general_t2token(right.type).content,global::get_line()};
         }
 
         st.push(roper->parse(left,right));
         ops.pop();
     }
     --global::in_expression;
+    if(st.size() != 1) {
+        throw errors::MWSMessageException{"Invalid expression: " + str,global::get_line()};
+    }
 
-    return st.top();
+    if(st.top().type == General_type::VOID) {
+        return Variable(Variable::Type::VOID);
+    }
+    return st.top().to_variable();
 }

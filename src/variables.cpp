@@ -67,6 +67,8 @@ Variable MeowScript::make_variable(Token context, Variable::Type ty_) {
             return Variable(context.content);
         case Variable::Type::Dictionary:
             {Variable ret; ret.type = Variable::Type::Dictionary; ret.storage.dict = dic_from_token(context); return ret;}
+        case Variable::Type::Object: 
+            {Variable ret; ret.type = Variable::Type::Object; ret.storage.obj = std::stoi(context.content.substr(0,context.content.size())); return ret;}
         case Variable::Type::VOID:
             {Variable ret; ret.type = type; return ret;}
     }
@@ -161,6 +163,8 @@ Token MeowScript::general_t2token(General_type type) {
         "Event",
         "Keyword",
         "Dictionary",
+        "Struct",
+        "Object",
         "Unknown",
         "Void"
     };
@@ -173,6 +177,8 @@ Token MeowScript::var_t2token(Variable::Type type) {
         "String",
         "List",
         "Dictionary",
+        "Struct",
+        "Object",
         "UNKNOWN",
         "Any",
         "Void"
@@ -186,6 +192,8 @@ Variable::Type MeowScript::token2var_t(Token token) {
         "String",
         "List",
         "Dictionary",
+        "Struct",
+        "Object",
         "UNKNOWN",
         "Any",
         "Void"
@@ -265,6 +273,12 @@ General_type MeowScript::get_type(Token context, CommandArgReqirement expected) 
     if(is_known_keyword(context)) {
         return General_type::KEYWORD;
     }
+    /*if(is_struct(context.content)) {
+        return static_cast<General_type>(get_struct(context.content)->index + static_cast<int>(General_type::OUT_OF_RANGE));
+    }*/
+    if(is_object(context.content)) {
+        return General_type::OBJECT;
+    }
     if(is_valid_name(context)) {
         return General_type::NAME;
     }
@@ -273,6 +287,7 @@ General_type MeowScript::get_type(Token context, CommandArgReqirement expected) 
     }
     return General_type::UNKNOWN;
 }
+
 
 std::string MeowScript::Variable::to_string() const {
     if(type == Variable::Type::Number) {
@@ -309,12 +324,41 @@ bool MeowScript::Variable::set(List list) {
     return true;
 }
 bool MeowScript::Variable::set(long double num) {
-    if((type != Variable::Type::Number && fixed_type) || constant) {
+    if((type != Variable::Type::ANY && type != Variable::Type::Number && fixed_type) || constant) {
         return false;
     }
     storage.number = num;
     type = Variable::Type::Number;
     return true;
+}
+
+bool MeowScript::Variable::set(Variable var) {
+    if((type != Variable::Type::ANY && type != var.type && fixed_type) || constant) {
+        return false;
+    }
+    storage = var.storage;
+    type = var.type;
+    return true;
+}
+
+bool MeowScript::matches(Variable::Type type1, General_type type2) {
+    /*if(type2 == General_type::STRUCT || type1 > Variable::Type::OUT_OF_RANGE) {
+        return ( 
+            (type2 == General_type::OBJECT && type1.struc_name == type2.struc_name) 
+                || 
+            (type1 == Variable::Type::Object && type1.struc_name == type2.struc_name)
+            ); 
+    }*/
+    return var_t2general_t(type1) == type2;
+}
+
+bool matches(std::vector<Variable::Type> types, General_type gtype) {
+    for(auto i : types) {
+        if(matches(i,gtype)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 std::string MeowScript::List::to_string() const {

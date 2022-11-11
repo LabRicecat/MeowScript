@@ -7,6 +7,10 @@
 
 MEOWSCRIPT_HEADER_BEGIN
 
+#define MWS_MUST_BE_IN_STRUCT() {if(global::in_struct == 0) {throw errors::MWSMessageException{"Command only allowed in struct!",global::get_line()};}}
+#define MWS_MUST_NOT_BE_IN_STRUCT() {if(global::in_struct != 0) {throw errors::MWSMessageException{"Command not allowed in struct!",global::get_line()};}}
+#define MWS_CAN_BE_IN_STRUCT()
+
 struct CommandArgReqirement {
     std::vector<int> carry;
 
@@ -51,7 +55,7 @@ struct CommandArgReqirement {
     bool has_carry(int in) const;
     bool matches(Token tk);
     bool matches(CommandArgReqirement car);
-    bool matches(General_type type);
+    //bool matches(General_type type);
 };
 
 inline CommandArgReqirement car_Any = 0;
@@ -70,7 +74,7 @@ inline CommandArgReqirement car_Event = General_type::EVENT;
 inline CommandArgReqirement car_Keyword = General_type::KEYWORD;
 inline CommandArgReqirement car_Dictionary = General_type::DICTIONARY;
 inline CommandArgReqirement car_PlaceHolderAble = car_Expression | car_Compound | car_Name;
-
+inline CommandArgReqirement car_Ongoing = 200;
 
 struct GeneralTypeToken;
 
@@ -85,6 +89,8 @@ std::vector<Command>* get_command_list();
 
 bool is_command(std::string name);
 Command* get_command(std::string name);
+
+Command* get_command_overload(std::string name,std::vector<Token> tokens);
 
 MEOWSCRIPT_HEADER_END
 

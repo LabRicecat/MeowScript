@@ -25,14 +25,14 @@ bool MeowScript::CommandArgReqirement::matches(Token tk) {
 bool MeowScript::CommandArgReqirement::matches(CommandArgReqirement car) {
     for(auto i : carry) {
         for(auto j : car.carry) {
-            if(i == j) {
+            if(i == j || i == 0 || j == 0) {
                 return true;
             }
         }
     }
     return false;
 }
-
+/*
 bool MeowScript::CommandArgReqirement::matches(General_type type) {
     for(auto i : carry) {
         if(i == 0 || i == (static_cast<int>(type)+1)) {
@@ -40,7 +40,7 @@ bool MeowScript::CommandArgReqirement::matches(General_type type) {
         }
     }
     return false;
-}
+}*/
 
 bool MeowScript::is_command(std::string name) {
     for(auto i : *get_command_list()) {
@@ -60,6 +60,30 @@ Command* MeowScript::get_command(std::string name) {
     return nullptr;
 }
 
+Command* MeowScript::get_command_overload(std::string name,std::vector<Token> tokens) {
+    for(auto& i : *get_command_list()) {
+        if(i.name == name) {
+            if(!(i.args.size() != 0 && i.args.back().matches(car_Ongoing)) && tokens.size() != i.args.size()) {
+                continue;
+            }
+            bool failed = false;
+            for(size_t j = 0; j < i.args.size(); ++j) {
+                auto identf = get_type(tokens[j],i.args[j]);
+                if(i.args[j] == car_Ongoing) {
+                    return &i;
+                }
+                if(!i.args[j].matches(identf)) {
+                    failed = true;
+                    break;
+                }
+            }
+            if(failed) { continue; }
+            return &i;
+        }
+    }
+    return nullptr;
+}
+
 static std::vector<Command> commandlist = {
     {"new",
         {
@@ -67,6 +91,7 @@ static std::vector<Command> commandlist = {
             car_Number | car_String | car_List | car_Dictionary | car_PlaceHolderAble,
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_CAN_BE_IN_STRUCT()
         new_variable(args[0].source.content,tools::check4placeholder(args[1]).to_variable());
         return general_null;
     }},
@@ -76,6 +101,7 @@ static std::vector<Command> commandlist = {
             car_Number | car_String | car_List | car_Dictionary | car_PlaceHolderAble,
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_CAN_BE_IN_STRUCT()
         Variable v = tools::check4placeholder(args[1]).to_variable();
         v.constant = true;
         new_variable(args[0].source.content,tools::check4placeholder(args[1]).to_variable());
@@ -87,6 +113,7 @@ static std::vector<Command> commandlist = {
             car_Number | car_String | car_List | car_Dictionary | car_PlaceHolderAble,
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_MUST_NOT_BE_IN_STRUCT()
         set_variable(args[0].source.content,tools::check4placeholder(args[1]).to_variable());
         return general_null;
     }},
@@ -95,6 +122,7 @@ static std::vector<Command> commandlist = {
             car_Name
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_MUST_NOT_BE_IN_STRUCT()
         Variable* var = get_variable(args[0].source.content);
         if(var == nullptr) {
             throw errors::MWSMessageException{"Unknwon variable: " + args[0].source.content,global::get_line()};
@@ -106,6 +134,7 @@ static std::vector<Command> commandlist = {
             car_Any
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_MUST_NOT_BE_IN_STRUCT()
         auto ret = tools::check4placeholder(args[0]);
         ++global::runner_should_return;
         return ret;
@@ -116,19 +145,17 @@ static std::vector<Command> commandlist = {
             car_ArgumentList, 
             car_Operator, // ->
             car_Name, // ReturnValue
-            car_Compound
+            car_Compound,
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_CAN_BE_IN_STRUCT()
         Function fun;
         std::string ret_ty = args[3].to_string();
-        args[4].source.content.erase(args[4].source.content.begin());
-        args[4].source.content.erase(args[4].source.content.begin()+args[4].source.content.size()-1);
-        fun.body = lex_text(args[4].source.content);
 
         if(args[2].to_string() != "->") {
             throw errors::MWSMessageException{"Expected \"->\" to declarate a return value, but got: " + args[2].to_string(),global::get_line()};
         }
-        if(!is_valid_var_t(ret_ty) && ret_ty != "Any" && ret_ty != "Void") { // TODO: all classes from OOP later!
+        if(!is_struct(ret_ty) && !is_valid_var_t(ret_ty) && ret_ty != "Any" && ret_ty != "Void") {
             throw errors::MWSMessageException{ret_ty + " is not a valid return value!",global::get_line()};
         }
 
@@ -142,6 +169,11 @@ static std::vector<Command> commandlist = {
             fun.return_type = token2var_t(args[3].to_string());
         }
 
+        args[4].source.content.erase(args[4].source.content.begin());
+        args[4].source.content.erase(args[4].source.content.begin()+args[4].source.content.size()-1);
+        
+        fun.body = lex_text(args[4].source.content);
+
         auto [names,types] = tools::parse_function_params(args[1].source);
         fun.arg_names = names;
         fun.args = types;
@@ -152,11 +184,87 @@ static std::vector<Command> commandlist = {
         }
         return general_null;
     }},
+    {"func",
+        {
+            car_Name,
+            car_ArgumentList, 
+            car_Compound | car_Expression | car_Name | car_String | car_Number
+        },
+    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_CAN_BE_IN_STRUCT()
+        Command* real_func = get_command("func");
+        GeneralTypeToken any;
+        any.type = General_type::NAME;
+        any.source.content = "Any";
+        args.insert(args.begin() + 2,any);
+        GeneralTypeToken op;
+        op.type = General_type::OPERATOR;
+        op.source.content = "->";
+        args.insert(args.begin() + 2,op);
+        
+        GeneralTypeToken comp;
+        comp.type = General_type::COMPOUND;
+        comp.source = "{ return ( " + args[2].to_string() + " ) }";
+        args.push_back(comp);
+
+        real_func->run(args);
+        return general_null;
+    }},
+    {"func",
+        {
+            car_Name,
+            car_ArgumentList, 
+            car_Operator, // =>
+            car_Expression | car_Name | car_String | car_Number | car_Ongoing
+        },
+    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_CAN_BE_IN_STRUCT()
+        Command* real_func = get_command("func");
+
+        if(args[2].to_string() != "=>") {
+            throw errors::MWSMessageException{"Expected \"=>\" to declarate a return value for this function, but got: " + args[2].to_string(),global::get_line()};
+        }
+        args.erase(args.begin()+2);
+
+        std::string ret;
+        for(size_t i = 2; i < args.size(); ++i) {
+            ret += args[i].to_string() + " ";
+        }
+        GeneralTypeToken comp;
+        comp.type = General_type::COMPOUND;
+        if(args.size() > 3) {
+            comp.source = "{ return ( " + ret + " ) }";
+        }
+        else {
+            comp.source = "{ return " + ret + " }";
+        }
+        
+
+        while(args.size() > 2) {
+            args.erase(args.end()-1);
+        }
+
+        GeneralTypeToken op;
+        op.type = General_type::OPERATOR;
+        op.source.content = "->";
+        args.push_back(op);
+        GeneralTypeToken any;
+        any.type = General_type::NAME;
+        any.source.content = "Any";
+        args.push_back(any);
+
+        args.push_back(comp);
+
+        real_func->run(args);
+        return general_null;
+    }},
+
     {"print",
         {
             car_String | car_Number | car_List | car_Expression | car_PlaceHolderAble
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_MUST_NOT_BE_IN_STRUCT()
         GeneralTypeToken gtt = tools::check4placeholder(args[0]);
         if(gtt.type == General_type::STRING) {
             std::cout << gtt.source.content << "\n";
@@ -169,12 +277,75 @@ static std::vector<Command> commandlist = {
         }
         return general_null;
     }},
+    {"print",
+        {
+            car_Ongoing
+        },
+    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_MUST_NOT_BE_IN_STRUCT()
+        std::string newline = "\n";
+
+        if(args.size() != 0 && args.back().type == General_type::EXPRESSION) {
+            auto cpy = args.back().source.content;
+            cpy.erase(cpy.begin());
+            cpy.erase(cpy.end()-1);
+
+            auto lexed = lex_text(cpy);
+            std::vector<Token> line;
+            for(auto i : lexed) {
+                for(auto j : i.source) {
+                    line.push_back(j);
+                }
+            }
+            if(line.size() >= 3 && line.front().content == "end") {
+                new_scope();
+                new_variable("end",0);
+                std::string expr;
+                for(auto i : line) {
+                    if(i.in_quotes) {
+                        expr += "\"" + i.content + "\"";
+                    }
+                    else {
+                        expr += i.content;
+                    }
+                    expr += " ";
+                }
+                parse_expression("( " + expr + " )");
+                Variable end = *get_variable("end");
+                if(end.type == Variable::Type::String) {
+                    newline = end.storage.string.content;
+                }
+                else {
+                    newline = end.to_string();
+                }
+                pop_scope();
+                args.pop_back();
+            }
+        }
+
+        for(auto i : args) {
+            GeneralTypeToken gtt = tools::check4placeholder(i);
+            if(gtt.type == General_type::STRING) {
+                std::cout << gtt.source.content;
+            }
+            else if(gtt.type == General_type::NAME) {
+                throw errors::MWSMessageException{"Unknown symbol: " + gtt.source.content,global::get_line()};
+            }
+            else {
+                std::cout << gtt.to_string();
+            }
+        }
+        std::cout << newline;
+        return general_null;
+    }},
+
     {"if",
         {
             car_Expression,
             car_Compound,
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_MUST_NOT_BE_IN_STRUCT()
         auto res = parse_expression(args[0].to_string());
         if(res.type != Variable::Type::Number) {
             throw errors::MWSMessageException{std::string("Expression \"" + args[0].to_string() + "\" did not return VariableType \"Number\" for if-statement!"),global::get_line()};
@@ -198,6 +369,7 @@ static std::vector<Command> commandlist = {
             car_Compound,
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_MUST_NOT_BE_IN_STRUCT()
         auto res = parse_expression(args[0].to_string());
         if(res.type != Variable::Type::Number) {
             throw errors::MWSMessageException{std::string("Expression \"" + args[0].to_string() + "\" did not return VariableType \"Number\" for if-statement!"),global::get_line()};
@@ -222,6 +394,7 @@ static std::vector<Command> commandlist = {
             car_Compound,
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_MUST_NOT_BE_IN_STRUCT()
         args[0].source.content.erase(args[0].source.content.begin());
         args[0].source.content.erase(args[0].source.content.begin()+args[0].source.content.size()-1);
 
@@ -240,6 +413,7 @@ static std::vector<Command> commandlist = {
             car_Name | car_Module
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_MUST_NOT_BE_IN_STRUCT()
         if(args[0].type == General_type::MODULE && is_loaded_module(args[0].to_string())) {
             get_module(args[0].to_string())->enabled = true;
         }
@@ -259,6 +433,7 @@ static std::vector<Command> commandlist = {
             car_Compound
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_MUST_NOT_BE_IN_STRUCT()
         if(args[1].to_string() != "in") {
             throw errors::MWSMessageException{"Expected \"in\" for loop but got: " + args[1].to_string(),global::get_line()};
         }
@@ -330,6 +505,7 @@ static std::vector<Command> commandlist = {
             car_Compound
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_MUST_NOT_BE_IN_STRUCT()
         GeneralTypeToken gtt = args[0];
         std::string comp = args[1].to_string();
         comp.erase(comp.begin());
@@ -358,12 +534,14 @@ static std::vector<Command> commandlist = {
     {"break",
         {},
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_MUST_NOT_BE_IN_STRUCT()
         ++global::break_loop;
         return general_null;
     }},
     {"continue",
         {},
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_MUST_NOT_BE_IN_STRUCT()
         ++global::continue_loop;
         return general_null;
     }},
@@ -372,6 +550,7 @@ static std::vector<Command> commandlist = {
             car_Any,
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_MUST_NOT_BE_IN_STRUCT()
         GeneralTypeToken gtt;
         gtt.source = general_t2token(tools::check4placeholder(args[0]).type).content;
         gtt.source.in_quotes = true;
@@ -383,6 +562,7 @@ static std::vector<Command> commandlist = {
             car_ArgumentList
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_MUST_NOT_BE_IN_STRUCT()
         auto alist = tools::parse_argument_list(args[0]);
         if(alist.size() > 1) {
             throw errors::MWSMessageException{"Too many/few arguments for command: input\n\t- Expected: <=1\n\t- But got: " + std::to_string(alist.size()) ,global::get_line()};
@@ -410,6 +590,7 @@ static std::vector<Command> commandlist = {
             car_ArgumentList
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_MUST_NOT_BE_IN_STRUCT()
         auto alist = tools::parse_argument_list(args[0]);
         if(alist.size() != 1) {
             throw errors::MWSMessageException{"Too many/few arguments for cast: string()",global::get_line()};
@@ -438,6 +619,7 @@ static std::vector<Command> commandlist = {
             car_ArgumentList
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_MUST_NOT_BE_IN_STRUCT()
         auto alist = tools::parse_argument_list(args[0]);
         if(alist.size() != 1) {
             throw errors::MWSMessageException{"Too many/few arguments for cast: number()",global::get_line()};
@@ -466,6 +648,7 @@ static std::vector<Command> commandlist = {
             car_ArgumentList
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_MUST_NOT_BE_IN_STRUCT()
         auto alist = tools::parse_argument_list(args[0]);
         if(alist.size() != 1) {
             throw errors::MWSMessageException{"Too many/few arguments for cast: list()",global::get_line()};
@@ -503,6 +686,7 @@ static std::vector<Command> commandlist = {
             car_ArgumentList
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_MUST_NOT_BE_IN_STRUCT()
         auto alist = tools::parse_argument_list(args[0]);
         if(alist.size() != 1) {
             throw errors::MWSMessageException{"Too many/few arguments for cast: str2var()",global::get_line()};
@@ -526,6 +710,7 @@ static std::vector<Command> commandlist = {
             car_String,
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_MUST_NOT_BE_IN_STRUCT()
         fs::path pth = global::include_path.top();
         pth = pth.remove_filename().string() + args[0].source.content;
         fs::path pth2;
@@ -548,6 +733,7 @@ static std::vector<Command> commandlist = {
             car_ArgumentList
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_MUST_NOT_BE_IN_STRUCT()
         if(is_event(args[1].source.content)) {
             throw errors::MWSMessageException{"Can't define event: \"" + args[1].source.content + "\"",global::get_line()};
         }
@@ -584,6 +770,7 @@ static std::vector<Command> commandlist = {
             car_ArgumentList
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_MUST_NOT_BE_IN_STRUCT()
         if(!is_event(args[0].source.content)) {
             throw errors::MWSMessageException{"No such event to occur: \"" + args[0].source.content + "\"",global::get_line()};
         }
@@ -634,6 +821,7 @@ static std::vector<Command> commandlist = {
             car_Compound
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_MUST_NOT_BE_IN_STRUCT()
         if(!is_event(args[0].source.content)) {
             throw errors::MWSMessageException{"No such event to listen to: \"" + args[0].source.content + "\"",global::get_line()};
         }
@@ -659,6 +847,66 @@ static std::vector<Command> commandlist = {
         scopes[fun.scope_idx].parent = current_scope()->index;
 
         global::events[args[0].source.content].listeners.push_back(fun);
+        return general_null;
+    }},
+    
+    {"struct",
+        {
+            car_Name,
+            car_Compound,
+        },
+    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_CAN_BE_IN_STRUCT()
+        args[1].source.content.erase(args[1].source.content.begin());
+        args[1].source.content.erase(args[1].source.content.begin()+args[1].source.content.size()-1);
+
+        Object struc = construct_object(args[1]);
+        if(!add_struct(args[0].source.content,struc)) {
+            throw errors::MWSMessageException{"Can't redefine struct: " + args[0].source.content,global::get_line()};
+        }
+        return general_null;
+    }},
+    {"gen_setget",
+        {
+            car_Name,
+        },
+    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_MUST_BE_IN_STRUCT()
+        Variable* var = get_variable(args[0].source.content);
+        Function f = generate_get(args[0].source.content,*var);
+        if(!add_function("get_" + args[0].source.content,f)) {
+            throw errors::MWSMessageException{"Can't redefine function: " + args[0].source.content,global::get_line()};
+        }
+        f = generate_set(args[0].source.content,*var);
+        if(!add_function("set_" + args[0].source.content,f)) {
+            throw errors::MWSMessageException{"Can't redefine function: " + args[0].source.content,global::get_line()};
+        }
+        return general_null;
+    }},
+    {"gen_get",
+        {
+            car_Name,
+        },
+    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_MUST_BE_IN_STRUCT()
+        Variable* var = get_variable(args[0].source.content);
+        Function f = generate_get(args[0].source.content,*var);
+        if(!add_function("get_" + args[0].source.content,f)) {
+            throw errors::MWSMessageException{"Can't redefine function: " + args[0].source.content,global::get_line()};
+        }
+        return general_null;
+    }},
+    {"gen_set",
+        {
+            car_Name,
+        },
+    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_MUST_BE_IN_STRUCT()
+        Variable* var = get_variable(args[0].source.content);
+        Function f = generate_set(args[0].source.content,*var);
+        if(!add_function("set_" + args[0].source.content,f)) {
+            throw errors::MWSMessageException{"Can't redefine function: " + args[0].source.content,global::get_line()};
+        }
         return general_null;
     }},
 
