@@ -27,6 +27,8 @@ void error_message_pretty(MeowScript::errors::MWSMessageException& err) {
     }
 }
 
+// #define MEOWSCRIPT_DEBUG_MODE
+
 int main(int argc, char** argv) {
     if(argc == 1) {
         print_help();
@@ -48,6 +50,10 @@ int main(int argc, char** argv) {
         print_help();
         return 0;
     }
+#ifdef MEOWSCRIPT_DEBUG_MODE
+        return 0;
+    }
+#endif
     else if(arg == "--version" || arg == "-v") {
         std::cout << MEOWSCRIPT_VERSION_STR << "\n";
         return 0;

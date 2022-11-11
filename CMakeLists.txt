@@ -25,7 +25,6 @@ set(SOURCE
     stdlib/filesystem.cpp 
     stdlib/math.cpp 
     stdlib/os.cpp 
-    stdlib/threading.cpp 
     )
 
 add_executable(${BINARY} ${SOURCE})
