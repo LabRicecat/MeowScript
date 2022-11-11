@@ -11,8 +11,8 @@ void print_help() {
               << " --help, -h \t: Prints this and exits\n"
               << " --version, -v \t: Prints the version and exits\n"
               << " --shell, -s \t: Opens the MeowScript shell\n\n"
-              << "(c) SirWolf 2022\n"
-              << "Github repo: https://github.com/SirWolfi/MeowScript\n";
+              << "(c) LabRiceCat 2022\n"
+              << "Github repo: https://github.com/LabRiceCat/MeowScript\n";
 }
 
 void error_message_pretty(MeowScript::errors::MWSMessageException& err) {
