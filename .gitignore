@@ -1,11 +1,7 @@
-test2.mws
-test.mws
 TODOLIST.txt
 build
 bin
 .vscode
 meow-script
 stdlib/threading.cpp
-test.c
-testtt.mws
-testtt.mws
+testing/
