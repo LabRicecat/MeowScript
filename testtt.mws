@@ -1,4 +1,0 @@
-new x 13
-new name "MeowScript"
-
-print "It seems like, " name " has now cool formatting with stuff like " x " : " ["woooo",   "oooo","oooo"]

@@ -221,7 +221,38 @@ inline std::unordered_map<std::string,std::vector<Operator>> operators = {
                     if(!is_variable(left.source)) {
                         throw errors::MWSMessageException{"Can't assign to not existing variable!",global::get_line()};
                     }
-                    set_variable(left.source,right.to_variable());
+                    Variable s;
+                    GeneralTypeToken gtt;
+                    bool rethrow = false;
+                    try {
+                        switch(right.type) {
+                            case General_type::NAME:
+                                s = tools::check4var(right).to_variable();
+                                break;
+                            case General_type::COMPOUND:
+                                try {
+                                    gtt = tools::check4compound(right);
+                                }
+                                catch(errors::MWSMessageException& err) {
+                                    rethrow = true;
+                                    throw err;
+                                }
+                                s = gtt.to_variable();
+                                break;
+                            case General_type::EXPRESSION:
+                                s = tools::check4expression(right).to_variable();
+                                break;
+                            default:
+                                s = right.to_variable();
+                        }
+                    }
+                    catch(errors::MWSMessageException& err) {
+                        if(rethrow) {
+                            throw err;
+                        }
+                        throw errors::MWSMessageException{"Invalid assign to variable! Only VariableType's allowed, but got: " + general_t2token(right.type).content,global::get_line()};
+                    }
+                    set_variable(left.source,s);
                     Variable ret;
                     ret.type = Variable::Type::VOID;
                     return ret;

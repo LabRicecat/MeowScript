@@ -89,7 +89,15 @@ Variable MeowScript::parse_expression(std::string str) {
                         roper = get_operator(ops.top(),left.type,r2.type);
                         if(roper == nullptr) {
                             roper = get_operator(ops.top(),l2.type,r2.type);
+                            right = r2;
+                            left = l2;
                         }
+                        else {
+                            right = r2;
+                        }
+                    }
+                    else {
+                        left = l2;
                     }
                 }
                 if(roper == nullptr) {

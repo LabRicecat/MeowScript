@@ -62,11 +62,11 @@ int main(int argc, char** argv) {
         MeowScript::new_scope();
         std::string input;
         std::cout << ">>> MeowScript shell <<<\n"
-            << "Type `exit` to exit the shell.\n";
+            << "Type `:exit` to exit the shell.\n";
         while(true) {
             std::cout << "$> ";
             std::getline(std::cin,input);
-            if(input == "exit") {
+            if(input == ":exit" || input == ":quit" || input == ":q" || input == ":e") {
                 MeowScript::pop_scope();
                 return 0;
             }
