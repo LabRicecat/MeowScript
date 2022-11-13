@@ -258,6 +258,15 @@ inline std::unordered_map<std::string,std::vector<Operator>> operators = {
                     return ret;
                 }
             },
+            {
+                General_type::OBJECT, General_type::UNKNOWN, -999,
+                [](GeneralTypeToken left, GeneralTypeToken right)->Variable {
+                    GeneralTypeToken gtt;
+                    gtt.type = General_type::NAME;
+                    gtt.source = left.source.content;
+                    return get_operator("=",gtt.type,right.type)->parse(gtt,right);
+                }
+            },
         }},
     }
 };
