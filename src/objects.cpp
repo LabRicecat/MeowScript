@@ -39,7 +39,9 @@ Object MeowScript::construct_object(GeneralTypeToken context) {
     Object retobj;
     new_scope(-1);
     ++global::in_struct;
+    current_scope()->current_obj.push(&retobj);
     run_text(context.source.content,false,true,-1,{},"",false,true);
+    current_scope()->current_obj.pop();
     --global::in_struct;
     retobj.members = current_scope()->vars;
     retobj.methods = current_scope()->functions;

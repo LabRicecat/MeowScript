@@ -12,6 +12,8 @@
 
 MEOWSCRIPT_HEADER_BEGIN
 
+struct Object;
+
 struct Scope {
     std::map<std::string,Variable> vars;
     std::map<std::string,Function> functions;
@@ -22,6 +24,8 @@ struct Scope {
     bool last_if_result = true;
 
     unsigned int current_line = 1;
+
+    std::stack<Object*> current_obj;
 };
 
 inline std::vector<Scope> scopes;

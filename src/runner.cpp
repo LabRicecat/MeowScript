@@ -394,6 +394,7 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
             obj.members = struc->members;
             obj.parent_scope = struc->parent_scope;
             obj.structs = struc->structs;
+            obj.on_deconstruct = struc->on_deconstruct;
             
             add_object(instance_name,obj);
 

@@ -345,8 +345,8 @@ static std::vector<Command> commandlist = {
             car_Compound,
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
-        MWS_MUST_NOT_BE_IN_STRUCT()
-        auto res = parse_expression(args[0].to_string());
+        MWS_MUST_NOT_BE_IN_STRUCT() // TODO: fix weird bug here
+        auto res = parse_expression("(" + args[0].to_string() + ")");
         if(res.type != Variable::Type::Number) {
             throw errors::MWSMessageException{std::string("Expression \"" + args[0].to_string() + "\" did not return VariableType \"Number\" for if-statement!"),global::get_line()};
         }
@@ -907,6 +907,22 @@ static std::vector<Command> commandlist = {
         if(!add_function("set_" + args[0].source.content,f)) {
             throw errors::MWSMessageException{"Can't redefine function: " + args[0].source.content,global::get_line()};
         }
+        return general_null;
+    }},
+    {"on_death", // TODO: maybe rework later
+        {
+            car_Function,
+        },
+    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_MUST_BE_IN_STRUCT()
+        Object* current = current_scope()->current_obj.top();
+        if(current_scope()->functions.count(args[0].to_string()) == 0) {
+            throw errors::MWSMessageException{"Only methods can be tagged as \"on_death\"!",global::get_line()};
+        }
+        if(current_scope()->functions[args[0].to_string()].args.size() != 0) {
+            throw errors::MWSMessageException{"Only methods with no arguments can be tagged as \"on_death\"!",global::get_line()};
+        }
+        current->on_deconstruct.push_back(args[0].to_string());
         return general_null;
     }},
 

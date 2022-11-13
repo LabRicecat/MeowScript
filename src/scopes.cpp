@@ -41,9 +41,17 @@ void MeowScript::new_scope(int parent, std::map<std::string,Variable> external_v
 
 void MeowScript::pop_scope(bool save) {
     if(!scope_trace.empty()) {
+        for(auto& i : current_scope()->vars) {
+            if(i.second.type == Variable::Type::Object) {
+                for(auto j : i.second.storage.obj.on_deconstruct) {
+                    get_method(&i.second.storage.obj,j)->run({});
+                }
+            }
+        }
         if(!save) {
             scopes[current_scope()->index].freed = true;
         }
+
         scope_trace.pop();
     }
 }

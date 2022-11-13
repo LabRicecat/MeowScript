@@ -20,6 +20,8 @@ struct Object {
     std::map<std::string,Variable> members;
     std::map<std::string,Function> methods;
     std::map<std::string,Object> structs;
+
+    std::vector<std::string> on_deconstruct;
 };
 
 Function generate_get(Token name, Variable member);
