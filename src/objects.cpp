@@ -2,6 +2,8 @@
 #include "../inc/scopes.hpp"
 #include "../inc/runner.hpp"
 #include "../inc/scopes.hpp"
+#include "../inc/variables.hpp"
+#include "../inc/functions.hpp"
 
 MEOWSCRIPT_SOURCE_FILE
 
@@ -35,51 +37,56 @@ Object MeowScript::construct_object(GeneralTypeToken context) {
     context.source.content.erase(context.source.content.begin());
     context.source.content.erase(context.source.content.end()-1);
     Object retobj;
-    new_scope(0);
+    new_scope(-1);
     ++global::in_struct;
     run_text(context.source.content,false,true,-1,{},"",false,true);
     --global::in_struct;
-    retobj = current_scope();
-    pop_scope(true);
+    retobj.members = current_scope()->vars;
+    retobj.methods = current_scope()->functions;
+    retobj.structs = current_scope()->structs;
+    pop_scope(false);
     return retobj;
 }
 
 bool MeowScript::has_method(Object obj, Token name) {
-    return obj->functions.count(name.content) != 0;
+    return obj.methods.count(name.content) != 0;
 }
 bool MeowScript::has_member(Object obj, Token name) {
-    return obj->vars.count(name.content) != 0;
+    return obj.members.count(name.content) != 0;
 }
 
-Function* MeowScript::get_method(Object obj, Token name) {
-    if(!has_method(obj,name)) {
+Function* MeowScript::get_method(Object* obj, Token name) {
+    if(!has_method(*obj,name)) {
         return nullptr;
     }
-    return &obj->functions[name];
+    return &obj->methods[name];
 }
-Variable* MeowScript::get_member(Object obj, Token name) {
-    if(!has_member(obj,name)) {
+Variable* MeowScript::get_member(Object* obj, Token name) {
+    if(!has_member(*obj,name)) {
         return nullptr;
     }
-    return &obj->vars[name];
+    return &obj->members[name.content];
 }
 
-Variable MeowScript::run_method(Object obj, Token name, std::vector<Variable> args) {
-    Function* func;
-    int index = obj->index;
-    while(index != -1) {
-        for(auto& i : scopes[index].functions) {
-            if(i.first == name.content) {
-                func = &i.second;
-            }
-        }
-        index = scopes[index].parent;
-    }
+Variable MeowScript::run_method(Object& obj, Token name, std::vector<Variable> args) {
+    Function* func = get_method(&obj,name.content);
     if(func == nullptr) {
         return Variable();
     }
-    load_scope(obj->index);
+
+    new_scope(obj.parent_scope);
+
+    current_scope()->vars = obj.members;
+    current_scope()->functions = obj.methods;
+    current_scope()->structs = obj.structs;
+
     Variable ret = func->run(args);
-    pop_scope(true);
+
+    obj.members = current_scope()->vars;
+    obj.methods = current_scope()->functions;
+    obj.structs = current_scope()->structs;
+
+    pop_scope(false);
+
     return ret;
 }

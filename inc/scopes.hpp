@@ -13,13 +13,11 @@
 MEOWSCRIPT_HEADER_BEGIN
 
 struct Scope {
-    using index_type = size_t;
     std::map<std::string,Variable> vars;
     std::map<std::string,Function> functions;
-    std::map<std::string,index_type> objects;
-    std::map<std::string,index_type> structs;
+    std::map<std::string,Object> structs;
     int parent = -1;
-    unsigned int index;
+    int index = -1;
     bool freed = false;
     bool last_if_result = true;
 
@@ -51,14 +49,14 @@ bool is_function(std::string name);
 bool is_object(std::string name);
 bool is_struct(std::string name);
 
-Object get_struct(std::string name);
-Object get_object(std::string name);
+Object* get_struct(std::string name);
+Object* get_object(std::string name);
 
 Function* get_function(std::string name);
 // returns false if it fails
 // does not override existing functions in scope
 bool add_function(std::string name, Function fun);
-bool add_object(std::string name, Object obj);
+void add_object(std::string name, Object obj);
 bool add_struct(std::string name, Object struc);
 
 MEOWSCRIPT_HEADER_END

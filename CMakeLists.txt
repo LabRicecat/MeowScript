@@ -14,7 +14,6 @@ set(SOURCE
     src/main.cpp 
     src/modules.cpp 
     src/objects.cpp
-    src/patterns.cpp 
     src/reader.cpp
     src/runner.cpp
     src/scopes.cpp

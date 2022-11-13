@@ -372,7 +372,7 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
                 get_variable(lines[i].source[0])->storage.dict = dic;
             }
         }
-        /*else if(identf_line.front() == General_type::STRUCT) {
+        else if(identf_line.front() == General_type::STRUCT) {
             for(size_t j = 1; j < lines[i].source.size(); ++j) {
                 identf_line.push_back(get_type(lines[i].source[j]));
             }
@@ -388,36 +388,33 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
                 call_args.push_back(i.to_variable());
 
             int scope_idx = get_new_scope();
-            Object obj = &scopes[scope_idx];
-            Object struc = get_struct(struct_name);
-            obj->functions = struc->functions;
-            obj->vars = struc->vars;
-            obj->parent = struc->parent;
-            obj->objects = struc->objects;
-            obj->structs = struc->structs;
+            Object obj;
+            Object* struc = get_struct(struct_name);
+            obj.methods = struc->methods;
+            obj.members = struc->members;
+            obj.parent_scope = struc->parent_scope;
+            obj.structs = struc->structs;
             
-            if(!add_object(instance_name,obj)) {
-                throw errors::MWSMessageException{"Can't redefine struct: " + struct_name.content,global::get_line()};
-            }
+            add_object(instance_name,obj);
 
             // constructor call
             if(has_method(obj,struct_name)) {
                 run_method(obj,struct_name,call_args);
             }
-        }*/
+        }
         else if(identf_line.front() == General_type::OBJECT) {
             for(size_t j = 1; j < lines[i].source.size(); ++j) {
                 identf_line.push_back(get_type(lines[i].source[j]));
             }
 
-            if(identf_line.size() < 3 || lines[i].source[1].content != ".") {
+            if(lines[i].source.size()-1 < 3 || lines[i].source[1].content != "." || lines[i].source[1].in_quotes) {
                 throw errors::MWSMessageException{"Invalid object-method call!\n\t- Expected: object.method <args>...",global::get_line()};
             }
-            auto idf_first = identf_line.front();
-            identf_line.erase(identf_line.begin()); // object
-            identf_line.erase(identf_line.begin()); // .
+            auto cpy = lines[i].source;
+            cpy.erase(cpy.begin()); // object
+            cpy.erase(cpy.begin()); // .
 
-            Object obj = get_object(lines[i].source[0].content);
+            Object* obj = get_object(lines[i].source[0].content);
             Token method_name = lines[i].source[2];
             Function* method = get_method(obj,method_name);
             if(method == nullptr) {
@@ -446,7 +443,7 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
                 }
             }
 
-            ret = run_method(obj,method_name,args);
+            ret = run_method(*obj,method_name,args);
         }
         else if(identf_line.front() == General_type::EXPRESSION) {
             for(size_t j = 1; j < lines[i].source.size(); ++j) {

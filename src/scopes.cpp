@@ -82,7 +82,7 @@ bool MeowScript::is_variable(std::string name) {
 
 Variable* MeowScript::get_variable(std::string name) {
     int index = current_scope()->index;
-    while(index != -1) {
+    while(index > -1) {
         for(auto& i : scopes[index].vars) {
             if(i.first == name) {
                 return &i.second;
@@ -119,9 +119,9 @@ bool MeowScript::is_event(std::string name) {
 
 bool MeowScript::is_object(std::string name) {
     int index = current_scope()->index;
-    while(index != -1) {
-        for(auto i : scopes[index].objects) {
-            if(i.first == name) {
+    while(index > -1) {
+        for(auto i : scopes[index].vars) {
+            if(i.first == name && i.second.type == Variable::Type::Object) {
                 return true;
             }
         }
@@ -132,7 +132,7 @@ bool MeowScript::is_object(std::string name) {
 
 bool MeowScript::is_struct(std::string name) {
     int index = current_scope()->index;
-    while(index != -1) {
+    while(index > -1) {
         for(auto i : scopes[index].structs) {
             if(i.first == name) {
                 return true;
@@ -143,12 +143,12 @@ bool MeowScript::is_struct(std::string name) {
     return false;
 }
 
-Object MeowScript::get_struct(std::string name) {
+Object* MeowScript::get_struct(std::string name) {
     int index = current_scope()->index;
-    while(index != -1) {
+    while(index > -1) {
         for(auto& i : scopes[index].structs) {
             if(i.first == name) {
-                return &scopes[i.second];
+                return &i.second;
             }
         }
         index = scopes[index].parent;
@@ -156,12 +156,12 @@ Object MeowScript::get_struct(std::string name) {
     return nullptr;
 }
 
-Object MeowScript::get_object(std::string name) {
+Object* MeowScript::get_object(std::string name) {
     int index = current_scope()->index;
-    while(index != -1) {
-        for(auto i : scopes[index].objects) {
-            if(i.first == name) {
-                return &scopes[i.second];
+    while(index > -1) {
+        for(auto& i : scopes[index].vars) {
+            if(i.first == name && i.second.type == Variable::Type::Object) {
+                return &i.second.storage.obj;
             }
         }
         index = scopes[index].parent;
@@ -171,7 +171,7 @@ Object MeowScript::get_object(std::string name) {
 
 Function* MeowScript::get_function(std::string name) {
     int index = current_scope()->index;
-    while(index != -1) {
+    while(index > -1) {
         for(auto& i : scopes[index].functions) {
             if(i.first == name) {
                 return &i.second;
@@ -196,14 +196,8 @@ bool MeowScript::add_function(std::string name, Function fun) {
     return true;
 }
 
-bool MeowScript::add_object(std::string name, Object obj) {
-    for(auto i : current_scope()->objects) {
-        if(i.first == name) {
-            return false;
-        }
-    }
-    current_scope()->objects[name] = obj->index;
-    return true;
+void MeowScript::add_object(std::string name, Object obj) {
+    set_variable(name,obj);
 }
 
 bool MeowScript::add_struct(std::string name, Object struc) {
@@ -212,15 +206,6 @@ bool MeowScript::add_struct(std::string name, Object struc) {
             return false;
         }
     }
-    if(struc == nullptr) {
-        struc = &scopes[get_new_scope()];
-        struc->parent = current_scope()->parent;
-    }
-    if(struc->index == 0) {
-        int idx = get_new_scope();
-        struc->index = idx;
-        struc->parent = current_scope()->parent;
-    }
-    current_scope()->structs[name] = struc->index;
+    current_scope()->structs[name] = struc;
     return true;
 }

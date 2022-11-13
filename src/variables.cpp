@@ -67,8 +67,8 @@ Variable MeowScript::make_variable(Token context, Variable::Type ty_) {
             return Variable(context.content);
         case Variable::Type::Dictionary:
             {Variable ret; ret.type = Variable::Type::Dictionary; ret.storage.dict = dic_from_token(context); return ret;}
-        case Variable::Type::Object: 
-            {Variable ret; ret.type = Variable::Type::Object; ret.storage.obj = std::stoi(context.content.substr(0,context.content.size())); return ret;}
+        //case Variable::Type::Object: 
+        //    {Variable ret; ret.type = Variable::Type::Object; ret.storage.obj = std::stoi(context.content.substr(0,context.content.size())); return ret;}
         case Variable::Type::VOID:
             {Variable ret; ret.type = type; return ret;}
     }
@@ -273,9 +273,9 @@ General_type MeowScript::get_type(Token context, CommandArgReqirement expected) 
     if(is_known_keyword(context)) {
         return General_type::KEYWORD;
     }
-    /*if(is_struct(context.content)) {
-        return static_cast<General_type>(get_struct(context.content)->index + static_cast<int>(General_type::OUT_OF_RANGE));
-    }*/
+    if(is_struct(context.content)) {
+        return General_type::STRUCT;
+    }
     if(is_object(context.content)) {
         return General_type::OBJECT;
     }

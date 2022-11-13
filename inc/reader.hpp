@@ -118,6 +118,7 @@ enum class General_type {
     EVENT,
     KEYWORD,
     DICTIONARY,
+    STRUCT,
     OBJECT,
     UNKNOWN,
     VOID,

@@ -249,7 +249,7 @@ GeneralTypeToken MeowScript::tools::check4replace(GeneralTypeToken token) {
 }
 
 Token MeowScript::tools::check4replace(Token token) {
-    if(replaces.count(token.content) != 0) {
+    if(replaces.count(token.content) != 0 && !token.in_quotes) {
         return replaces[token.content].to_string();
     }
     return token;

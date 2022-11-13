@@ -6,6 +6,7 @@
 #include "list.hpp"
 #include "commands.hpp"
 #include "tools.hpp"
+#include "objects.hpp"
 
 #include <unordered_map>
 
@@ -36,10 +37,6 @@ public:
 Dictionary dic_from_token(Token tk);
 Token dic_to_token(Dictionary dic);
 
-struct Scope;
-// Also defined in object.hpp
-using Object = Scope*;
-
 struct Variable {
 private:
     struct stor_ {
@@ -47,7 +44,7 @@ private:
         Token string;
         List list;
         Dictionary dict;
-        int obj;
+        Object obj;
     };
 public:
     enum class Type {
@@ -68,6 +65,7 @@ public:
     Variable(Token string) {type = Type::String; storage.string = string; storage.string.in_quotes = true;}
     Variable(long double number) {type = Type::Number; storage.number = number;}
     Variable(Dictionary dic) {type = Variable::Type::Dictionary, storage.dict = dic;}
+    Variable(Object obj) {type = Variable::Type::Object, storage.obj = obj;}
     Variable(Type ty) : type(ty) {}
     Variable() {}
 

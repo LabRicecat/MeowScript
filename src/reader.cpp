@@ -351,16 +351,19 @@ bool MeowScript::is_dictionary(Token context) {
         else if(got_equals && value == general_null) {
             value = GeneralTypeToken(i);
         }
-        else if(!i.in_quotes && i.content == ",") {
-            if(!got_equals || key == general_null || value == general_null) {
+        else if(!i.in_quotes && (i.content == "," || i.content == ";")) {
+            if(!got_equals || key == general_null || key.type == General_type::UNKNOWN || value == general_null || value.type == General_type::UNKNOWN) {
                 return false;
             }
             got_equals = false;
             key = general_null;
             value = general_null;
         }
+        else if(tools::remove_unneeded_chars(i.content).content != "") {
+            return false;
+        }
     }
-    return !(!got_equals || key == general_null || value == general_null);
+    return !(!got_equals || key == general_null || key.type == General_type::UNKNOWN || value == general_null || value.type == General_type::UNKNOWN);
 }
 
 bool MeowScript::brace_check(Token context, char open, char close) {
