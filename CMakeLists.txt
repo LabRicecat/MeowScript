@@ -4,7 +4,7 @@ project(meow-script
     LANGUAGES CXX
     DESCRIPTION "An easy extendable scripting language"
 )
-
+set(CMAKE_CXX_STANDARD 17)
 set(BINARY meow-script)
 set(SOURCE 
     src/commands.cpp
