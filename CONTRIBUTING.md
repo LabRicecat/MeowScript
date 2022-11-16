@@ -7,6 +7,8 @@ This way you don't work hard for something that later on doesn't get added.
 Please be also aware that your work might need some changes before it can be pushed. This is not criticism but we (I) want keep the MeowScript standards.
 Also Maybe consider making a **module** instead!
 
+Important: Never ever commit a pull request to the `main` branch! Only to the `developer/` branch where all the ongoing work is stored, so we can asure nothing breaks when we release a new update. Thanks for understanding!
+
 ## When to contribute and when to make a module
 Modules are for external things like making wrapers for libraries/frameworks or writing their own.  
 There should be no need for a "better-meowscript" module, but for something like "curl-lib" or "algorihm-collection".
