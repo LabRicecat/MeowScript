@@ -18,7 +18,7 @@ To get permission to commit something is because of that also not that easy to g
 
 Modules are the users resposibility to function. But we have to assure that MeowScript keeps stable and save as well as portable.
 
-# What a contribute should look like
+# What a contribution should look like
 First of all follow the instruction on the template.  
 Please tell us exactly what you added, why you added it, how you added it (not that in detail but in general)  
 and why it could not be done with a simple module.  
