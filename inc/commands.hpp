@@ -68,11 +68,14 @@ inline CommandArgReqirement car_Compound = General_type::COMPOUND;
 inline CommandArgReqirement car_Name = General_type::NAME;
 inline CommandArgReqirement car_Expression = General_type::EXPRESSION;
 inline CommandArgReqirement car_ArgumentList = General_type::ARGUMENTLIST;
+inline CommandArgReqirement car_ParameterList = General_type::PARAMETERLIST;
 inline CommandArgReqirement car_Operator = General_type::OPERATOR;
 inline CommandArgReqirement car_Module = General_type::MODULE;
 inline CommandArgReqirement car_Event = General_type::EVENT;
 inline CommandArgReqirement car_Keyword = General_type::KEYWORD;
 inline CommandArgReqirement car_Dictionary = General_type::DICTIONARY;
+inline CommandArgReqirement car_Object = General_type::OBJECT;
+inline CommandArgReqirement car_Struct = General_type::STRUCT;
 inline CommandArgReqirement car_PlaceHolderAble = car_Expression | car_Compound | car_Name;
 inline CommandArgReqirement car_Ongoing = 200;
 

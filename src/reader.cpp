@@ -163,7 +163,6 @@ bool MeowScript::is_valid_var_t(Token context) {
         "String",
         "List",
         "Dictionary",
-        "Struct",
         "Object",
         "Any",
         "Void",
@@ -188,6 +187,7 @@ bool MeowScript::is_valid_general_t(Token context) {
         "Name",
         "Expression",
         "Argumentlist",
+        "Parameterlist,"
         "Operator",
         "Module",
         "Event",
@@ -220,6 +220,7 @@ bool MeowScript::is_valid_operator_char(char ch) {
         ch == '*' ||
         ch == '/' ||
         ch == '%' ||
+        ch == ':' ||
         ch == '.';
 }
 
@@ -257,55 +258,120 @@ bool MeowScript::is_known_keyword(Token text) {
 }
 
 bool MeowScript::is_valid_argumentlist(Token context) {
-    if(!brace_check(context,'(',')')) {
+    if(context.content == "" || context.in_quotes || !brace_check(context,'(',')')) {
         return false;
     }
     context.content.erase(context.content.begin());
     context.content.erase(context.content.begin()+context.content.size()-1);
-
     if(context.content.size() == 0) {
         return true;
     }
-    bool tm = true;
-    std::stack<char> in_br;
-    bool in_q = false;
-    bool in_br_fb = false;
-    for(auto i : context.content) {
-        if(i == ',' && tm && in_br.empty() && !in_q && !in_br_fb) {
-            return false;
-        }
-        else if(i == ',' && in_br.empty() && !in_q && !in_br_fb) {
-            tm = true;
-        }
-        else if(i == '"') {
-            if(!in_br.empty()) {
-                in_br_fb = !in_br_fb;
-            }
-            else {
-                in_q = !in_q;
-                tm = false;
-            }
-        }
-        else if(is_open_brace(i) && !in_q && !in_br_fb) {
-            in_br.push(i);
-            tm = false;
-        }
-        else if(is_closing_brace(i) && !in_q && !in_br_fb) {
-            if(in_br.empty() || !is_brace_pair(in_br.top(),i)) {
+
+    auto lexed = lex_text(context);
+    std::vector<Token> line;
+    for(auto i : lexed)
+        for(auto j : i.source) 
+            line.push_back(j);
+    
+    GeneralTypeToken last = general_null;
+    bool found_sl = true;
+
+    for(auto i : line) {
+        if(i.content == ",") {
+            if(last == general_null) {
                 return false;
             }
-            in_br.pop();
-            tm = false;
+            last = general_null;
+            found_sl = true;
         }
-        else if(is_valid_operator_char(i) && !in_q && in_br.empty() && !in_br_fb) {
+        else if(found_sl) {
+            last = i;
+            found_sl = false;
+        }
+        else {
             return false;
         }
-        else if(i != ' ' && i != '\t' && !is_newline(i) && !in_q && in_br.empty() && !in_br_fb) {
-            tm = false;
+    }
+    if(last != general_null && found_sl) {
+        return false;
+    }
+
+    return true;
+}
+
+bool MeowScript::is_valid_parameterlist(Token context) {
+    if(!brace_check(context,'(',')')) {
+        return false;
+    }
+
+    context.content.erase(context.content.begin());
+    context.content.erase(context.content.begin()+context.content.size()-1);
+    
+    auto lines = lex_text(context.content);
+    if(lines.empty()) {
+        return true;
+    }
+    std::vector<Parameter> ret;
+    std::vector<Token> line;
+    for(auto i : lines) {
+        for(auto j : i.source) {
+            line.push_back(j);
         }
     }
-    if(in_q || !in_br.empty() || tm) {
-        return false;
+
+    std::vector<Token> nline;
+    for(size_t i = 0; i < line.size(); ++i) {
+        nline.push_back("");
+        for(size_t j = 0; j < line[i].content.size(); ++j) {
+            if(line[i].content[j] == ',') {
+                nline.push_back(",");
+                nline.push_back("");
+            }
+            else {
+                nline.back().content += line[i].content[j];
+            }
+        }
+    }
+
+    std::vector<std::vector<Token>> arguments;
+    if(nline.size() != 0)
+        arguments.push_back({});
+    for(size_t i = 0; i < nline.size(); ++i) {
+        if(nline[i].content == ",") {
+            if(arguments.back().empty()) {
+                return false;
+            }
+            arguments.push_back({});
+        }
+        else {
+            arguments.back().push_back(nline[i]);
+        }
+    }
+
+    for(auto i : arguments) {
+        for(size_t j = 0; j < i.size(); ++j) {
+            if(i[j].content == "" && !i[j].in_quotes) {
+                i.erase(i.begin()+j);
+                --j;
+            }
+        }
+
+        if(i.size() == 1) {
+            if(!is_valid_name(i[0]) /*|| is_variable(context) || is_struct(context) || is_function(context)*/) {
+                return false;
+            }
+        }
+        else if(i.size() == 3) {
+            if(!is_valid_name(i[0]) /*|| is_variable(context) || is_struct(context) || is_function(context)*/) {
+                return false;
+            }
+            if(i[1].content != "::" && i[1].content != ":") {
+                return false;
+            }
+        }
+        else {
+            return false;
+        }
     }
     return true;
 }

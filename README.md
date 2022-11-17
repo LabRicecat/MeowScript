@@ -1,37 +1,44 @@
 # MeowScript
-A small interpreted easy extendable programming language.  
-License: MIT
+
+![Error Loading Image!](./assets/LogoLong.png)
+
+<div id="badges">
+   <img src="https://img.shields.io/github/v/release/LabRiceCat/MeowScript?label=latest&style=for-the-badge"/>
+</div>
+<img src="https://img.shields.io/github/license/LabRiceCat/MeowScript"/>  
+
+A small interpreted, easy extendable programming language.  
 
 ## Requirements
-The requirements are:
-- CMake and Make
-- a  C++ compiler
-- Either Windows or Linux (Other systems not tested, but might work to some extend)
-- Only on Windows:  
--- Msys2  
--- MinGW
+|             | Compiler          | BuildTool     | Recomendet|
+|-------------|-------------------|---------------|-----------|
+| Linux       | gcc/clang         | cmake         |  -------  |
+| Windows     | mingw64-gcc/clang | nmake & cmake |   Msys2   |
+| MaxOS       | ---------         | ----------    |  -------  |
 
 ## Installing
-Execute this commands in your shell:
+Execute this commands in your shell to download and build MeowScript.
 ```
-$ git clone https://github.com/SirWolfi/MeowScript.git
+$ git clone https://github.com/LabRicecat/MeowScript.git
 $ cd MeowScript
 $ mkdir build
 $ cd build
 $ cmake ..
 $ make
 ```
-If you use Windows, you can run the interpreter like this:
+If you use Windows, you can run the interpreter!
 ```
-$ ./meow-script.exe --help
-```
-If you use Linux, use this:
-```
-$ ./meow-script --help
+$ meow-script --help
 ```
 
 ## How to use
-Please read the wiki [here](https://github.com/SirWolfi/MeowScript/wiki) to learn more about MeowScript.
+Get started **[here](https://github.com/SirWolfi/MeowScript/wiki)** to learn more about MeowScript!
 
 ## Try it out
-You can try out MeowScript live by using the `--shell` option.
+You can try out MeowScript live by using the `--shell` option or make a `main.mws` and run it with
+```
+$ meow-script main.mws
+```
+
+## Credits
+Cute cat on the PC by DALL-E 2.0

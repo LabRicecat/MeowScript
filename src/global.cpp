@@ -8,8 +8,8 @@ unsigned int MeowScript::global::get_line() {
         return current_scope()->current_line;
     }
     unsigned int line = 0;
-    unsigned int index = current_scope()->index;
-    while(index != 0) {
+    int index = current_scope()->index;
+    while(index > 0) {
         line += scopes[index].current_line;
         index = scopes[index].parent;
     }

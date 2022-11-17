@@ -7,6 +7,31 @@
 
 MEOWSCRIPT_SOURCE_FILE
 
+bool MeowScript::struct_matches(Object* obj1, Object* obj2) {
+    if(obj1->members.size() > obj2->members.size() || obj1->methods.size() > obj2->methods.size() || obj1->structs.size() > obj2->structs.size()) {
+        return false;
+    }
+    for(auto i : obj1->members) {
+        Variable* vr_obj2 = get_member(obj2,i.first);
+        if(vr_obj2 == nullptr || (i.second.fixed_type && vr_obj2->type != i.second.type)) {
+            return false;
+        }
+    }
+    for(auto i : obj1->methods) {
+        Function* fn_obj2 = get_method(obj2,i.first);
+        if(fn_obj2 == nullptr || !i.second.return_type.matches(fn_obj2->return_type) || !paramlist_matches(i.second.params,fn_obj2->params)) {
+            return false;
+        }
+    }
+    for(auto i : obj1->structs) {
+        Object* st_obj2 = get_struct(obj2,i.first);
+        if(st_obj2 == nullptr || !struct_matches(&i.second,st_obj2)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 Function MeowScript::generate_get(Token name, Variable member) {
     Function func;
     func.body = lex_text("return " + name.content + "\n");
@@ -22,10 +47,9 @@ Function MeowScript::generate_set(Token name, Variable member) {
     Function func;
     func.body = lex_text("set " + name.content + " " + name.content +"_set\n");
     if(member.fixed_type)
-        func.args.push_back(member.type);
+        func.params.push_back(Parameter(member.type,name.content +"_set"));
     else
-        func.args.push_back(Variable::Type::ANY);
-    func.arg_names.push_back(name.content +"_set");
+        func.params.push_back(Parameter(Variable::Type::ANY,name.content +"_set"));
     func.return_type = Variable::Type::VOID;
     return func;
 }
@@ -46,6 +70,7 @@ Object MeowScript::construct_object(GeneralTypeToken context) {
     retobj.members = current_scope()->vars;
     retobj.methods = current_scope()->functions;
     retobj.structs = current_scope()->structs;
+    retobj.parent_scope = current_scope()->parent;
     pop_scope(false);
     return retobj;
 }
@@ -56,6 +81,10 @@ bool MeowScript::has_method(Object obj, Token name) {
 bool MeowScript::has_member(Object obj, Token name) {
     return obj.members.count(name.content) != 0;
 }
+bool MeowScript::has_struct(Object obj, Token name) {
+    return obj.structs.count(name.content) != 0;
+}
+
 
 Function* MeowScript::get_method(Object* obj, Token name) {
     if(!has_method(*obj,name)) {
@@ -68,6 +97,12 @@ Variable* MeowScript::get_member(Object* obj, Token name) {
         return nullptr;
     }
     return &obj->members[name.content];
+}
+Object* MeowScript::get_struct(Object* obj, Token name) {
+    if(!has_struct(*obj,name)) {
+        return nullptr;
+    }
+    return &obj->structs[name.content];
 }
 
 Variable MeowScript::run_method(Object& obj, Token name, std::vector<Variable> args) {
@@ -82,7 +117,7 @@ Variable MeowScript::run_method(Object& obj, Token name, std::vector<Variable> a
     current_scope()->functions = obj.methods;
     current_scope()->structs = obj.structs;
 
-    Variable ret = func->run(args);
+    Variable ret = func->run(args,true);
 
     obj.members = current_scope()->vars;
     obj.methods = current_scope()->functions;

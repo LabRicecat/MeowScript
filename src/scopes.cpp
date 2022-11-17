@@ -76,6 +76,11 @@ unsigned int MeowScript::get_new_scope() {
     for(size_t i = 0; i < scopes.size(); ++i) {
         if(scopes[i].freed) {
             scopes[i].freed = false;
+            scopes[i].vars = {};
+            scopes[i].functions = {};
+            scopes[i].structs = {};
+            scopes[i].parent = 0;
+            scopes[i].current_obj = {};
             return i;
         }
     }
@@ -205,6 +210,13 @@ bool MeowScript::add_function(std::string name, Function fun) {
 }
 
 void MeowScript::add_object(std::string name, Object obj) {
+    for(auto& i : obj.methods) {
+        int sscope = i.second.scope_idx;
+        i.second.scope_idx = get_new_scope();
+        scopes[i.second.scope_idx] = scopes[sscope];
+        scopes[i.second.scope_idx].parent = obj.parent_scope;
+        scopes[i.second.scope_idx].index = i.second.scope_idx;
+    }
     set_variable(name,obj);
 }
 

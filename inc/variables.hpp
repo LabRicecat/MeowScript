@@ -135,6 +135,12 @@ struct GeneralTypeToken {
                 source = dic_to_token(var.storage.dict);
                 type = General_type::DICTIONARY;
                 break;
+            case Variable::Type::Object:
+                source = (std::string)"?";
+                type = General_type::OBJECT;
+                use_save_obj = true;
+                saveobj = var.storage.obj;
+                break;
             default:
                 type = General_type::VOID;
         }
@@ -186,10 +192,15 @@ struct GeneralTypeToken {
     bool operator!=(const GeneralTypeToken gtt) const {
         return !operator==(gtt);
     }
+
+    bool use_save_obj = false;
+
+    Object saveobj;
 };
 
+struct Parameter;
 namespace tools {
-    std::tuple<std::vector<std::string>,std::vector<Variable::Type>> parse_function_params(Token context);
+    std::vector<Parameter> parse_function_params(Token context);
 
     inline std::map<std::string,GeneralTypeToken> replaces = {
         {"pi",GeneralTypeToken(3.14159)},

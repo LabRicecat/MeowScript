@@ -146,8 +146,8 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
 
             argument_list alist = tools::parse_argument_list(lines[i].source[1]);
 
-            if(alist.size() != fun->args.size()) {
-                std::string err = "Too many/few arguments for function: " + name + "\n\t- Expected: " + std::to_string(fun->args.size()) + "\n\t- But got: " + std::to_string(alist.size());
+            if(alist.size() != fun->params.size()) {
+                std::string err = "Too many/few arguments for function: " + name + "\n\t- Expected: " + std::to_string(fun->params.size()) + "\n\t- But got: " + std::to_string(alist.size());
                 throw errors::MWSMessageException{err,global::get_line()};
             }
 
@@ -156,10 +156,10 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
             }
 
             std::vector<Variable> args;
-            for(size_t j = 0; j < fun->args.size(); ++j) {
+            for(size_t j = 0; j < fun->params.size(); ++j) {
                 try {
-                    if(fun->args[j] != Variable::Type::UNKNOWN && fun->args[j] != general_t2var_t(alist[j].type)) {
-                        std::string err_msg = "Invalid argument:\n\t- Expected: " + var_t2token(fun->args[j]).content + "\n\t- But got: " + var_t2token(alist[j].to_variable().type).content;
+                    if(fun->params[j].matches(alist[j].to_variable())) {
+                        std::string err_msg = "Invalid argument:\n\t- Expected: " + var_t2token(fun->params[j].type).content + "\n\t- But got: " + var_t2token(alist[j].to_variable().type).content;
                         throw errors::MWSMessageException(err_msg,global::get_line());
                     }
                     else {
@@ -169,18 +169,22 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
                     }
                 }
                 catch(errors::MWSMessageException& err) {
-                    std::string err_msg = "Can't convert GeneralType " + general_t2token(alist[j].type).content + " to VariableType " + var_t2token(fun->args[j]).content + " as function parameter for function: " + name;
+                    std::string err_msg = "Can't convert GeneralType " + general_t2token(alist[j].type).content + " to VariableType " + var_t2token(fun->params[j].type).content + " as function parameter for function: " + name;
                     throw errors::MWSMessageException{err_msg,global::get_line()};
                 }
             }
 
-            ret = GeneralTypeToken(fun->run(args));
-            if(fun->return_type == Variable::Type::VOID && ret.type != General_type::UNKNOWN && ret.type != General_type::VOID) {
-                throw errors::MWSMessageException{"Invalid return type!\n\t- Expected: Void\n\t- But got: " + general_t2token(ret.type).content,global::get_line()};
+            Function cpy = *fun;
+            Function cpy2 = cpy;
+
+                // TODO: this is an ugly workaroung because after
+                // the line below it will only contain garbage for 
+                // some reason (???)
+            Variable vret = cpy2.run(args); 
+            if(!cpy2.return_type.matches(vret)) {
+                throw errors::MWSMessageException{"Invalid return type!\n\t- Expected: " + var_t2token(fun->return_type.type).content + "\n\t- But got: " + general_t2token(ret.type).content,global::get_line()};
             }
-            else if(fun->return_type != Variable::Type::VOID && fun->return_type != Variable::Type::ANY && var_t2general_t(fun->return_type) != ret.type) {
-                throw errors::MWSMessageException{"Invalid return type!\n\t- Expected: " + var_t2token(fun->return_type).content + "\n\t- But got: " + general_t2token(ret.type).content,global::get_line()};
-            }
+            ret = vret;
             if(shadow_return) {
                 ret = general_null;
             }
@@ -376,7 +380,9 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
             for(size_t j = 1; j < lines[i].source.size(); ++j) {
                 identf_line.push_back(get_type(lines[i].source[j]));
             }
-            if(identf_line.size() != 3 || identf_line[1] != General_type::NAME || identf_line[2] != General_type::ARGUMENTLIST) {
+
+            if(lines[i].source.size() != 3 || get_type(lines[i].source[1]) != General_type::NAME ||
+                 get_type(lines[i].source[2],car_ArgumentList) != General_type::ARGUMENTLIST) {
                 throw errors::MWSMessageException{"Invalid pattern for a struct initialisation!\n\t- Pattern: <struct> <name> (<args>)",global::get_line()};
             }
             Token struct_name = lines[i].source[0];
@@ -427,16 +433,16 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
             if(lines[i].source.size() != 4) {
                 throw errors::MWSMessageException{"Invalid object-method call!\n\t- Expected: object.method <args>...",global::get_line()};
             }
-            if(arglist.size() != method->args.size()) {
-                std::string err = "Too many/few arguments for object method: " + method_name.content + "\n\t- Expected: " + std::to_string(method->args.size()) + "\n\t- But got: " + std::to_string(lines[i].source.size()-3);
+            if(arglist.size() != method->params.size()) {
+                std::string err = "Too many/few arguments for object method: " + method_name.content + "\n\t- Expected: " + std::to_string(method->params.size()) + "\n\t- But got: " + std::to_string(lines[i].source.size()-3);
                 throw errors::MWSMessageException{err,global::get_line()};
             }
 
-            for(size_t j = 0; j < method->args.size(); ++j) {
+            for(size_t j = 0; j < method->params.size(); ++j) {
                 Variable garg = arglist[j].to_variable(); 
                 auto identf = garg.type;
-                if(method->args[j] != Variable::Type::UNKNOWN && method->args[j] != Variable::Type::ANY && method->args[j] != identf) {
-                    std::string err_msg = "Invalid argument:\n\t- Expected: " + var_t2token(method->args[j]).content + "\n\t- But got: " + general_t2token(get_type(lines[i].source[j+3].content)).content + " (" + lines[i].source[j+3].content + ")";
+                if(!method->params[j].matches(garg)) {
+                    std::string err_msg = "Invalid argument:\n\t- Expected: " + var_t2token(method->params[j].type).content + "\n\t- But got: " + general_t2token(get_type(lines[i].source[j+3].content)).content + " (" + lines[i].source[j+3].content + ")";
                     throw errors::MWSMessageException(err_msg,global::get_line());
                 }
                 else {
@@ -481,6 +487,14 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
         } // catch statement
 
         global::pop_trace();
+
+        if(ret.type == General_type::OBJECT) {
+            Object* obj = get_object(ret.source);
+            if(obj != nullptr) {
+                ret.saveobj = *obj;
+                ret.use_save_obj = true;
+            }
+        }
 
         if(global::runner_should_return != 0) {
             if(!pass_return_down) {

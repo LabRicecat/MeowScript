@@ -92,6 +92,7 @@ bool is_valid_operator_name(Token text);
 bool is_valid_name(Token text);
 bool is_known_keyword(Token text);
 bool is_valid_argumentlist(Token context);
+bool is_valid_parameterlist(Token context);
 bool is_brace_pair(char open,char close);
 bool is_event(std::string name);
 bool is_dictionary(Token context);
@@ -113,6 +114,7 @@ enum class General_type {
     NAME,
     EXPRESSION,
     ARGUMENTLIST,
+    PARAMETERLIST,
     OPERATOR,
     MODULE,
     EVENT,

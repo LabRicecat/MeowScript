@@ -24,6 +24,8 @@ Variable::Type MeowScript::general_t2var_t(General_type type) {
             return Variable::Type::VOID;
         case General_type::DICTIONARY:
             return Variable::Type::Dictionary;
+        case General_type::OBJECT:
+            return Variable::Type::Object;
         default:
             std::string err = "Can't cast GeneralType " + general_t2token(type).content + " to VariableType!";
             throw errors::MWSMessageException(err,global::get_line());
@@ -40,6 +42,8 @@ General_type MeowScript::var_t2general_t(Variable::Type type) {
             return General_type::NUMBER;
         case Variable::Type::VOID:
             return General_type::VOID;
+        case Variable::Type::Object:
+            return General_type::OBJECT;
         default:
             return General_type::UNKNOWN;
     }
@@ -68,7 +72,7 @@ Variable MeowScript::make_variable(Token context, Variable::Type ty_) {
         case Variable::Type::Dictionary:
             {Variable ret; ret.type = Variable::Type::Dictionary; ret.storage.dict = dic_from_token(context); return ret;}
         //case Variable::Type::Object: 
-        //    {Variable ret; ret.type = Variable::Type::Object; ret.storage.obj = std::stoi(context.content.substr(0,context.content.size())); return ret;}
+        //    return *get_object(context.content);
         case Variable::Type::VOID:
             {Variable ret; ret.type = type; return ret;}
     }
@@ -158,6 +162,7 @@ Token MeowScript::general_t2token(General_type type) {
         "Name",
         "Expression",
         "Argumentlist",
+        "Parameterlist",
         "Operator",
         "Module",
         "Event",
@@ -177,7 +182,6 @@ Token MeowScript::var_t2token(Variable::Type type) {
         "String",
         "List",
         "Dictionary",
-        "Struct",
         "Object",
         "UNKNOWN",
         "Any",
@@ -192,7 +196,6 @@ Variable::Type MeowScript::token2var_t(Token token) {
         "String",
         "List",
         "Dictionary",
-        "Struct",
         "Object",
         "UNKNOWN",
         "Any",
@@ -207,6 +210,18 @@ Variable::Type MeowScript::token2var_t(Token token) {
 }
 
 Variable MeowScript::GeneralTypeToken::to_variable() const {
+    if(type == General_type::OBJECT) {
+        Variable ret;
+        if(use_save_obj) {
+            ret.storage.obj = saveobj;
+            ret.type = Variable::Type::Object;
+            return ret;
+        }
+        Object* obj = get_object(source.content);
+        ret.type = Variable::Type::Object;
+        ret.storage.obj = *obj;
+        return ret;
+    }
     try {
         return make_variable(source,general_t2var_t(type));
     }
@@ -242,6 +257,9 @@ General_type MeowScript::get_type(Token context, CommandArgReqirement expected) 
     }
     if(context.in_quotes || (context.content.front() == '"' && context.content.back() == '"')) {
         return General_type::STRING;
+    }
+    if(is_valid_parameterlist(context) && expected.matches(General_type::PARAMETERLIST)) {
+        return General_type::PARAMETERLIST;
     }
     if(is_valid_argumentlist(context) && expected.matches(General_type::ARGUMENTLIST)) {
         return General_type::ARGUMENTLIST;

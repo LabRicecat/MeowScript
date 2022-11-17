@@ -7,20 +7,46 @@
 
 #include <map>
 #include <tuple>
+#include <string>
 
 MEOWSCRIPT_HEADER_BEGIN
 
+struct Parameter {
+    Variable::Type type = Variable::Type::ANY;
+    std::string name;
+    std::string struct_name;
+
+    Parameter() {}
+    Parameter(Variable::Type type) : type(type) {}
+    Parameter(Variable::Type type, std::string name) : type(type), name(name) {}
+    Parameter(Variable::Type type, std::string name, std::string struct_name) : type(type), name(name), struct_name(struct_name) {}
+    void operator=(Variable::Type type) {
+        this->type = type;
+    }
+
+    bool matches(Variable var) const;
+    bool matches(Parameter param) const;
+
+    void operator=(Parameter p) {
+        this->type = p.type;
+        this->name = p.name;
+        this->struct_name = p.struct_name;
+    }
+};
+
+bool paramlist_matches(std::vector<Parameter> params1,std::vector<Parameter> params2);
+
 class Function {
 public:
+    using ReturnType = Parameter;
     std::vector<Line> body;
-    std::vector<Variable::Type> args;
-    std::vector<std::string> arg_names;
+    std::vector<Parameter> params;
     unsigned int scope_idx = 0;
-    Variable::Type return_type = Variable::Type::UNKNOWN;
+    ReturnType return_type = Variable::Type::UNKNOWN;
     fs::path file;
     // Takes care of the required amount of arguments and their types as well as the return value
     // Throws `MWSMessageException` on error
-    Variable run(std::vector<Variable> args);
+    Variable run(std::vector<Variable> args, bool method_mode = false);
 };
 
 struct Event {
@@ -33,8 +59,7 @@ struct Event {
         OCCUR_ONLY
     }visibility = Visibility::PUBLIC;
 
-    std::vector<std::string> arg_names;
-    std::vector<Variable::Type> arg_types;
+    std::vector<Parameter> params;
 };
 
 namespace global {

@@ -51,6 +51,7 @@ int main(int argc, char** argv) {
         return 0;
     }
 #ifdef MEOWSCRIPT_DEBUG_MODE
+    else if(arg == "--debug" || arg == "-d") {
         return 0;
     }
 #endif
