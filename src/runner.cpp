@@ -401,13 +401,19 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
             obj.parent_scope = struc->parent_scope;
             obj.structs = struc->structs;
             obj.on_deconstruct = struc->on_deconstruct;
-            
-            add_object(instance_name,obj);
 
-            // constructor call
+            for(auto& i : obj.methods) {
+                int sscope = i.second.scope_idx;
+                i.second.scope_idx = get_new_scope();
+                scopes[i.second.scope_idx] = scopes[sscope];
+                scopes[i.second.scope_idx].parent = obj.parent_scope;
+                scopes[i.second.scope_idx].index = i.second.scope_idx;
+            }
+            set_variable(instance_name,obj);
             if(has_method(obj,struct_name)) {
                 run_method(obj,struct_name,call_args);
             }
+            set_variable(instance_name,obj);
         }
         else if(identf_line.front() == General_type::OBJECT) {
             for(size_t j = 1; j < lines[i].source.size(); ++j) {
