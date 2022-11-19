@@ -112,23 +112,22 @@ Object* MeowScript::get_struct(Object* obj, Token name) {
     return &obj->structs[name.content];
 }
 
-Variable MeowScript::run_method(Object& obj, Token name, std::vector<Variable> args) {
-    Function* func = get_method(&obj,name.content);
+Variable MeowScript::run_method(Object* obj, Token name, std::vector<Variable> args) {
+    Function* func = get_method(obj,name.content);
     if(func == nullptr) {
         return Variable();
     }
+    new_scope(obj->parent_scope);
 
-    new_scope(obj.parent_scope);
-
-    current_scope()->vars = obj.members;
-    current_scope()->functions = obj.methods;
-    current_scope()->structs = obj.structs;
+    current_scope()->vars = obj->members;
+    current_scope()->functions = obj->methods;
+    current_scope()->structs = obj->structs;
 
     Variable ret = func->run(args,true);
 
-    obj.members = current_scope()->vars;
-    obj.methods = current_scope()->functions;
-    obj.structs = current_scope()->structs;
+    obj->members = current_scope()->vars;
+    obj->methods = current_scope()->functions;
+    obj->structs = current_scope()->structs;
 
     pop_scope(false);
 

@@ -410,11 +410,11 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
             }
             set_variable(instance_name,obj);
             if(has_method(obj,struct_name)) {
-                run_method(obj,struct_name,call_args);
+                run_method(&obj,struct_name,call_args);
             }
             set_variable(instance_name,obj);
         }
-        else if(identf_line.front() == General_type::OBJECT) {
+        else if(identf_line.front() == General_type::OBJECT || (identf_line.front() == General_type::NAME && is_variable(lines[i].source[0]) && get_variable(lines[i].source[0])->type == Variable::Type::Object)) {
             for(size_t j = 1; j < lines[i].source.size(); ++j) {
                 identf_line.push_back(get_type(lines[i].source[j]));
             }
@@ -426,9 +426,9 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
             cpy.erase(cpy.begin()); // object
             cpy.erase(cpy.begin()); // .
 
-            Object* obj = get_object(lines[i].source[0].content);
+            Object obj = *get_object(lines[i].source[0].content);
             Token method_name = lines[i].source[2];
-            Function* method = get_method(obj,method_name);
+            Function* method = get_method(&obj,method_name);
             if(method == nullptr) {
                 throw errors::MWSMessageException{"Unknown object method: " + method_name.content,global::get_line()};
             }
@@ -455,7 +455,8 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
                 }
             }
 
-            ret = run_method(*obj,method_name,args);
+            ret = run_method(&obj,method_name,args);
+            *get_object(lines[i].source[0].content) = obj;
         }
         else if(identf_line.front() == General_type::EXPRESSION) {
             for(size_t j = 1; j < lines[i].source.size(); ++j) {

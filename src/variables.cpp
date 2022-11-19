@@ -295,9 +295,6 @@ General_type MeowScript::get_type(Token context, CommandArgReqirement expected) 
     if(is_struct(context.content)) {
         return General_type::STRUCT;
     }
-    if(is_object(context.content)) {
-        return General_type::OBJECT;
-    }
     if(is_valid_name(context)) {
         return General_type::NAME;
     }

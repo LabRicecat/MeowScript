@@ -36,7 +36,7 @@ Function* get_method(Object* obj, Token name);
 Variable* get_member(Object* obj, Token name);
 Object* get_struct(Object* obj, Token name);
 
-Variable run_method(Object& obj, Token name, std::vector<Variable> args);
+Variable run_method(Object* obj, Token name, std::vector<Variable> args);
 
 // `obj2` might match `obj1` but not vice versa!
 // This is because we check if `obj2` has all requirements to be a

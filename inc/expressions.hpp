@@ -126,6 +126,14 @@ inline std::unordered_map<std::string,std::vector<Operator>> operators = {
                     return left_v.storage.string.content == right_v.storage.string.content;
                 }
             },
+            {
+                General_type::OBJECT, General_type::OBJECT, 0,
+                [](GeneralTypeToken left, GeneralTypeToken right)->Variable {
+                    Variable left_v = left.to_variable();
+                    Variable right_v = right.to_variable();
+                    return struct_matches(&left_v.storage.obj,&right_v.storage.obj);
+                }
+            },
         }},
         {"!=", {
             {
@@ -142,6 +150,14 @@ inline std::unordered_map<std::string,std::vector<Operator>> operators = {
                     Variable left_v = left.to_variable();
                     Variable right_v = right.to_variable();
                     return left_v.storage.string.content != right_v.storage.string.content;
+                }
+            },
+            {
+                General_type::OBJECT, General_type::OBJECT, 0,
+                [](GeneralTypeToken left, GeneralTypeToken right)->Variable {
+                    Variable left_v = left.to_variable();
+                    Variable right_v = right.to_variable();
+                    return !struct_matches(&left_v.storage.obj,&right_v.storage.obj);
                 }
             },
         }},
@@ -258,15 +274,6 @@ inline std::unordered_map<std::string,std::vector<Operator>> operators = {
                     Variable ret;
                     ret.type = Variable::Type::VOID;
                     return ret;
-                }
-            },
-            {
-                General_type::OBJECT, General_type::UNKNOWN, -999,
-                [](GeneralTypeToken left, GeneralTypeToken right)->Variable {
-                    GeneralTypeToken gtt;
-                    gtt.type = General_type::NAME;
-                    gtt.source = left.source.content;
-                    return get_operator("=",gtt.type,right.type)->parse(gtt,right);
                 }
             },
         }},
