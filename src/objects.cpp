@@ -71,7 +71,14 @@ Object MeowScript::construct_object(GeneralTypeToken context) {
     retobj.methods = current_scope()->functions;
     retobj.structs = current_scope()->structs;
     retobj.parent_scope = current_scope()->parent;
-    pop_scope(false);
+
+    scopes[current_scope()->index].freed = true;
+    scopes[current_scope()->index].current_obj = {};
+    scopes[current_scope()->index].functions = {};
+    scopes[current_scope()->index].vars = {};
+    scopes[current_scope()->index].structs = {};
+    
+    scope_trace.pop();
     return retobj;
 }
 

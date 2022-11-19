@@ -139,6 +139,15 @@ static std::vector<Command> commandlist = {
         ++global::runner_should_return;
         return ret;
     }},
+    /*{"return",
+        {
+            
+        },
+    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_MUST_NOT_BE_IN_STRUCT()
+        ++global::runner_should_return;
+        return general_null;
+    }},*/
     {"func",
         {
             car_Name,
@@ -351,7 +360,7 @@ static std::vector<Command> commandlist = {
             car_Compound,
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
-        MWS_MUST_NOT_BE_IN_STRUCT() // TODO: fix weird bug here
+        MWS_MUST_NOT_BE_IN_STRUCT()
         auto res = parse_expression("(" + args[0].to_string() + ")");
         if(res.type != Variable::Type::Number) {
             throw errors::MWSMessageException{std::string("Expression \"" + args[0].to_string() + "\" did not return VariableType \"Number\" for if-statement!"),global::get_line()};

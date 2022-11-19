@@ -145,6 +145,17 @@ struct GeneralTypeToken {
                 type = General_type::VOID;
         }
     }
+    GeneralTypeToken(Token token, CommandArgReqirement cars) {
+        type = get_type(token,cars);
+        source = token;
+        if(!source.in_quotes && type == General_type::STRING) {
+            source.content.erase(source.content.begin());
+            source.content.erase(source.content.begin()+source.content.size()-1);
+            source = tools::remove_unneeded_chars(source);
+            source.in_quotes = true;
+        }
+
+    }
     GeneralTypeToken() {}
 
     Variable to_variable() const;
@@ -205,7 +216,9 @@ namespace tools {
     inline std::map<std::string,GeneralTypeToken> replaces = {
         {"pi",GeneralTypeToken(3.14159)},
         {"phi",GeneralTypeToken(1.61803)},
-        {"e",GeneralTypeToken(2.71828)}
+        {"e",GeneralTypeToken(2.71828)},
+        {"true",GeneralTypeToken(1)},
+        {"false",GeneralTypeToken("0",car_Number)}
     };
 
     GeneralTypeToken check4replace(GeneralTypeToken token);

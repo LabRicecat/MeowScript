@@ -42,6 +42,8 @@ void pop_scope(bool save = false);
 // Actually just copies the data of the scope
 void load_scope(int idx, std::map<std::string,Variable> external_vars = {}, bool hard_load = false);
 
+void call_obj_deconstruct(Object& obj);
+
 unsigned int get_new_scope();
 
 bool is_variable(std::string name);

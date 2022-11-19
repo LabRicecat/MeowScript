@@ -43,13 +43,15 @@ void MeowScript::pop_scope(bool save) {
     if(!scope_trace.empty()) {
         for(auto& i : current_scope()->vars) {
             if(i.second.type == Variable::Type::Object) {
-                for(auto j : i.second.storage.obj.on_deconstruct) {
-                    get_method(&i.second.storage.obj,j)->run({});
-                }
+                call_obj_deconstruct(i.second.storage.obj);
             }
         }
         if(!save) {
             scopes[current_scope()->index].freed = true;
+            scopes[current_scope()->index].current_obj = {};
+            scopes[current_scope()->index].functions = {};
+            scopes[current_scope()->index].vars = {};
+            scopes[current_scope()->index].structs = {};
         }
 
         scope_trace.pop();
@@ -69,6 +71,12 @@ void MeowScript::load_scope(int idx, std::map<std::string,Variable> external_var
         for(auto i : external_vars) {
             current_scope()->vars[i.first] = i.second;
         }
+    }
+}
+
+void MeowScript::call_obj_deconstruct(Object& obj) {
+    for(auto j : obj.on_deconstruct) {
+        get_method(&obj,j)->run({});
     }
 }
 
@@ -115,6 +123,9 @@ void MeowScript::set_variable(std::string name, Variable var) {
     if(vptr->constant) {
         throw errors::MWSMessageException{"Const variable \"" + name + "\" can not get a new value! (" + var.to_string() + ")",global::get_line()};
     }
+    //if(vptr->type == Variable::Type::Object) {
+        //call_obj_deconstruct(vptr->storage.obj);
+    //}
     vptr->set(var); // TODO: on error -> handling
 }
 

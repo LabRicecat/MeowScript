@@ -29,6 +29,8 @@ Operator* get_operator(std::string name, General_type left, General_type right);
 
 Variable parse_expression(std::string s);
 
+bool is_expression(std::string s);
+
 inline std::unordered_map<std::string,std::vector<Operator>> operators = {
     {
         {"+", {

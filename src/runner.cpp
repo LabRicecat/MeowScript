@@ -63,13 +63,12 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
             }
             str_line += " " + i.content;
         }
-        try { // will also not recognise it if something else fails
+
+        if(is_expression("(" + str_line + ")")) {
             Variable result = parse_expression("(" + str_line + ")");
             ret = result;
         }
-        catch(...) {
-        
-        if(identf_line.front() == General_type::COMMAND) {
+        else if(identf_line.front() == General_type::COMMAND) {
             auto cp = lines[i].source;
             if(cp.size() != 0)
                 cp.erase(cp.begin());
@@ -92,7 +91,7 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
             bool f_ongoing = false;
             for(size_t j = 0; j < cp.size(); ++j) {
                 if(f_ongoing) {
-                    args.push_back(GeneralTypeToken(cp[j]));
+                    args.push_back(GeneralTypeToken(cp[j],command->args[j]));
                 }
                 else {
                     auto identf = get_type(cp[j],command->args[j]);
@@ -110,7 +109,7 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
                         throw errors::MWSMessageException(err_msg,global::get_line());
                     }
                     else {
-                        args.push_back(GeneralTypeToken(cp[j]));
+                        args.push_back(GeneralTypeToken(cp[j],command->args[j]));
                     }
                 }
             }
@@ -226,7 +225,7 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
                     throw errors::MWSMessageException(err_msg,global::get_line());
                 }
                 else {
-                    args.push_back(GeneralTypeToken(lines[i].source[j+3]));
+                    args.push_back(GeneralTypeToken(lines[i].source[j+3],command->args[j]));
                 }
             }
 
@@ -266,7 +265,7 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
                     throw errors::MWSMessageException(err_msg,global::get_line());
                 }
                 else {
-                    args.push_back(GeneralTypeToken(lines[i].source[j+3]));
+                    args.push_back(GeneralTypeToken(lines[i].source[j+3],method->args[j]));
                 }
             }
 
@@ -314,7 +313,7 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
                     throw errors::MWSMessageException(err_msg,global::get_line());
                 }
                 else {
-                    args.push_back(GeneralTypeToken(lines[i].source[j+3]));
+                    args.push_back(GeneralTypeToken(lines[i].source[j+3],method->args[j]));
                 }
             }
 
@@ -362,7 +361,7 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
                     throw errors::MWSMessageException(err_msg,global::get_line());
                 }
                 else {
-                    args.push_back(GeneralTypeToken(lines[i].source[j+3]));
+                    args.push_back(GeneralTypeToken(lines[i].source[j+3],method->args[j]));
                 }
             }
 
@@ -489,8 +488,6 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
             std::string err = "Invalid start of line!\n\t- Expected: [Command,Function,Module,String,List,Dictionary,Object,Struct]\n\t- But got: " + general_t2token(identf_line.front()).content + " (" + lines[i].source[0].content + ")\n"; 
             throw errors::MWSMessageException{err,global::get_line()};
         }
-
-        } // catch statement
 
         global::pop_trace();
 

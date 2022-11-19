@@ -7,6 +7,7 @@
 #include "../inc/tools.hpp"
 #include "../inc/modules.hpp"
 #include "../inc/scopes.hpp"
+#include "../inc/expressions.hpp"
 
 #include <algorithm>
 
@@ -258,14 +259,14 @@ General_type MeowScript::get_type(Token context, CommandArgReqirement expected) 
     if(context.in_quotes || (context.content.front() == '"' && context.content.back() == '"')) {
         return General_type::STRING;
     }
+    if(is_expression(context.content) && expected.matches(General_type::EXPRESSION)) {
+        return General_type::EXPRESSION;
+    }
     if(is_valid_parameterlist(context) && expected.matches(General_type::PARAMETERLIST)) {
         return General_type::PARAMETERLIST;
     }
     if(is_valid_argumentlist(context) && expected.matches(General_type::ARGUMENTLIST)) {
         return General_type::ARGUMENTLIST;
-    }
-    if(brace_check(context,'(',')') && expected.matches(General_type::EXPRESSION)) {
-        return General_type::EXPRESSION;
     }
     if(is_dictionary(context) && expected.matches(General_type::DICTIONARY)) {
         return General_type::DICTIONARY;
