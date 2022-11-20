@@ -63,7 +63,7 @@ Command* MeowScript::get_command(std::string name) {
 Command* MeowScript::get_command_overload(std::string name,std::vector<Token> tokens) {
     for(auto& i : *get_command_list()) {
         if(i.name == name) {
-            if(!(i.args.size() != 0 && i.args.back().matches(car_Ongoing)) && tokens.size() != i.args.size()) {
+            if(tokens.size() != i.args.size() && !(i.args.size() != 0 && i.args.back().matches(car_Ongoing) && !i.args.back().matches(car_Any))) {
                 continue;
             }
             bool failed = false;
@@ -93,6 +93,15 @@ static std::vector<Command> commandlist = {
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
         MWS_CAN_BE_IN_STRUCT()
         new_variable(args[0].source.content,tools::check4placeholder(args[1]).to_variable());
+        return general_null;
+    }},
+    {"new",
+        {
+            car_Name,
+        },
+    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_CAN_BE_IN_STRUCT()
+        new_variable(args[0].source.content,0);
         return general_null;
     }},
     {"const",
@@ -139,7 +148,7 @@ static std::vector<Command> commandlist = {
         ++global::runner_should_return;
         return ret;
     }},
-    /*{"return",
+    {"return",
         {
             
         },
@@ -147,7 +156,7 @@ static std::vector<Command> commandlist = {
         MWS_MUST_NOT_BE_IN_STRUCT()
         ++global::runner_should_return;
         return general_null;
-    }},*/
+    }},
     {"func",
         {
             car_Name | car_Function,

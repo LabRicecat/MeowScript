@@ -196,7 +196,7 @@ bool MeowScript::is_expression(std::string str) {
     }
 
     if(lexed.size() == 1) {
-        return true;
+        return get_type(lexed[0]) != General_type::COMMAND;
     }
 
     std::stack<std::string> ops;
