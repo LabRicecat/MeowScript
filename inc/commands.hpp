@@ -43,6 +43,9 @@ struct CommandArgReqirement {
         }
         return carry[0] == car.carry[0];
     }
+    bool operator!=(CommandArgReqirement car) {
+        return !operator==(car);
+    }
 
     CommandArgReqirement(int i) {
         operator=(i);

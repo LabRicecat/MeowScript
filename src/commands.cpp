@@ -63,7 +63,7 @@ Command* MeowScript::get_command(std::string name) {
 Command* MeowScript::get_command_overload(std::string name,std::vector<Token> tokens) {
     for(auto& i : *get_command_list()) {
         if(i.name == name) {
-            if(tokens.size() != i.args.size() && !(i.args.size() != 0 && i.args.back().matches(car_Ongoing) && !i.args.back().matches(car_Any))) {
+            if(tokens.size() != i.args.size() && !(i.args.size() != 0 && i.args.back().matches(car_Ongoing) && i.args.back() != car_Any)) {
                 continue;
             }
             bool failed = false;
