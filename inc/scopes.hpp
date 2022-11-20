@@ -16,7 +16,7 @@ struct Object;
 
 struct Scope {
     std::map<std::string,Variable> vars;
-    std::map<std::string,Function> functions;
+    std::map<std::string,std::vector<Function>> functions;
     std::map<std::string,Object> structs;
     int parent = -1;
     int index = -1;
@@ -58,9 +58,13 @@ bool is_struct(std::string name);
 Object* get_struct(std::string name);
 Object* get_object(std::string name);
 
-Function* get_function(std::string name);
+bool func_param_match(Function fun,std::vector<Variable> params);
+bool func_param_match(Function fun,std::vector<Parameter> params);
+Function* get_function(std::string name, std::vector<Variable> params);
+Function* get_function(std::string name, std::vector<Parameter> params);
 // returns false if it fails
 // does not override existing functions in scope
+
 bool add_function(std::string name, Function fun);
 void add_object(std::string name, Object obj);
 bool add_struct(std::string name, Object struc);

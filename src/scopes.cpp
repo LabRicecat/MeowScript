@@ -75,8 +75,8 @@ void MeowScript::load_scope(int idx, std::map<std::string,Variable> external_var
 }
 
 void MeowScript::call_obj_deconstruct(Object& obj) {
-    for(auto j : obj.on_deconstruct) {
-        get_method(&obj,j)->run({});
+    for(auto [name,args] : obj.on_deconstruct) {
+        run_method(&obj,name,args);
     }
 }
 
@@ -134,7 +134,16 @@ void MeowScript::new_variable(std::string name, Variable var) {
 }
 
 bool MeowScript::is_function(std::string name) {
-    return get_function(name) != nullptr;
+    int index = current_scope()->index;
+    while(index > -1) {
+        for(auto& i : scopes[index].functions) {
+            if(i.first == name) {
+                return true;
+            }
+        }
+        index = scopes[index].parent;
+    }
+    return false;
 }
 
 bool MeowScript::is_event(std::string name) {
@@ -193,12 +202,57 @@ Object* MeowScript::get_object(std::string name) {
     return nullptr;
 }
 
-Function* MeowScript::get_function(std::string name) {
+bool MeowScript::func_param_match(Function fun,std::vector<Variable> params) {
+    if(fun.params.size() != params.size()) {
+        return false;
+    }
+    for(size_t i = 0; i < fun.params.size(); ++i) {
+        if(!fun.params[i].matches(params[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool MeowScript::func_param_match(Function fun,std::vector<Parameter> params) {
+    if(fun.params.size() != params.size()) {
+        return false;
+    }
+    for(size_t i = 0; i < fun.params.size(); ++i) {
+        if(!fun.params[i].matches(params[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+Function* MeowScript::get_function(std::string name,std::vector<Variable> params) {
     int index = current_scope()->index;
     while(index > -1) {
         for(auto& i : scopes[index].functions) {
             if(i.first == name) {
-                return &i.second;
+                for(auto& j : i.second) { 
+                    if(func_param_match(j,params)) {
+                        return &j;
+                    }
+                }
+            }
+        }
+        index = scopes[index].parent;
+    }
+    return nullptr;
+}
+
+Function* MeowScript::get_function(std::string name,std::vector<Parameter> params) {
+    int index = current_scope()->index;
+    while(index > -1) {
+        for(auto& i : scopes[index].functions) {
+            if(i.first == name) {
+                for(auto& j : i.second) { 
+                    if(func_param_match(j,params)) {
+                        return &j;
+                    }
+                }
             }
         }
         index = scopes[index].parent;
@@ -207,26 +261,26 @@ Function* MeowScript::get_function(std::string name) {
 }
 
 bool MeowScript::add_function(std::string name, Function fun) {
-    for(auto i : current_scope()->functions) {
-        if(i.first == name) {
-            return false;
-        }
+    if(::get_function(name,fun.params) != nullptr) {
+        return false;
     }
     if(fun.scope_idx == 0) {
         fun.scope_idx = get_new_scope();
         scopes[fun.scope_idx].parent = current_scope()->index;
     }
-    current_scope()->functions[name] = fun;
+    current_scope()->functions[name].push_back(fun);
     return true;
 }
 
 void MeowScript::add_object(std::string name, Object obj) {
     for(auto& i : obj.methods) {
-        int sscope = i.second.scope_idx;
-        i.second.scope_idx = get_new_scope();
-        scopes[i.second.scope_idx] = scopes[sscope];
-        scopes[i.second.scope_idx].parent = obj.parent_scope;
-        scopes[i.second.scope_idx].index = i.second.scope_idx;
+        for(auto& j : i.second) {
+            int sscope = j.scope_idx;
+            j.scope_idx = get_new_scope();
+            scopes[j.scope_idx] = scopes[sscope];
+            scopes[j.scope_idx].parent = obj.parent_scope;
+            scopes[j.scope_idx].index = j.scope_idx;
+        }
     }
     set_variable(name,obj);
 }

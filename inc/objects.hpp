@@ -13,15 +13,16 @@ MEOWSCRIPT_HEADER_BEGIN
 struct Variable;
 struct Function;
 struct GeneralTypeToken;
+struct Parameter;
 
 struct Object {
     int parent_scope = 0;
 
     std::map<std::string,Variable> members;
-    std::map<std::string,Function> methods;
+    std::map<std::string,std::vector<Function>> methods;
     std::map<std::string,Object> structs;
 
-    std::vector<std::string> on_deconstruct;
+    std::vector<std::tuple<std::string,std::vector<Variable>>> on_deconstruct;
 };
 
 Function generate_get(Token name, Variable member);
@@ -32,7 +33,8 @@ bool has_method(Object obj, Token name);
 bool has_member(Object obj, Token name);
 bool has_struct(Object obj, Token name);
 
-Function* get_method(Object* obj, Token name);
+Function* get_method(Object* obj, Token name, std::vector<Variable> params);
+Function* get_method(Object* obj, Token name, std::vector<Parameter> params);
 Variable* get_member(Object* obj, Token name);
 Object* get_struct(Object* obj, Token name);
 

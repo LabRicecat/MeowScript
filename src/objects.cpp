@@ -18,9 +18,11 @@ bool MeowScript::struct_matches(Object* obj1, Object* obj2) {
         }
     }
     for(auto i : obj1->methods) {
-        Function* fn_obj2 = get_method(obj2,i.first);
-        if(fn_obj2 == nullptr || !i.second.return_type.matches(fn_obj2->return_type) || !paramlist_matches(i.second.params,fn_obj2->params)) {
-            return false;
+        for(auto j : i.second) {
+            Function* fn_obj2 = get_method(obj2,i.first,j.params);
+            if(fn_obj2 == nullptr || !j.return_type.matches(fn_obj2->return_type) || !paramlist_matches(j.params,fn_obj2->params)) {
+                return false;
+            }
         }
     }
     for(auto i : obj1->structs) {
@@ -93,11 +95,27 @@ bool MeowScript::has_struct(Object obj, Token name) {
 }
 
 
-Function* MeowScript::get_method(Object* obj, Token name) {
+Function* MeowScript::get_method(Object* obj, Token name, std::vector<Variable> params) {
     if(!has_method(*obj,name)) {
         return nullptr;
     }
-    return &obj->methods[name];
+    for(auto& i : obj->methods[name]) {
+        if(func_param_match(i,params)) {
+            return &i;
+        }
+    }
+    return nullptr;
+}
+Function* MeowScript::get_method(Object* obj, Token name, std::vector<Parameter> params) {
+    if(!has_method(*obj,name)) {
+        return nullptr;
+    }
+    for(auto& i : obj->methods[name]) {
+        if(func_param_match(i,params)) {
+            return &i;
+        }
+    }
+    return nullptr;
 }
 Variable* MeowScript::get_member(Object* obj, Token name) {
     if(!has_member(*obj,name)) {
@@ -113,7 +131,7 @@ Object* MeowScript::get_struct(Object* obj, Token name) {
 }
 
 Variable MeowScript::run_method(Object* obj, Token name, std::vector<Variable> args) {
-    Function* func = get_method(obj,name.content);
+    Function* func = get_method(obj,name.content,args);
     if(func == nullptr) {
         return Variable();
     }

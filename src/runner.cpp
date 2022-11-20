@@ -64,7 +64,7 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
             str_line += " " + i.content;
         }
 
-        if(is_expression("(" + str_line + ")")) {
+        if(get_type(str_line,car_Expression) != General_type::EXPRESSION && is_expression("(" + str_line + ")")) {
             Variable result = parse_expression("(" + str_line + ")");
             ret = result;
         }
@@ -91,7 +91,7 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
             bool f_ongoing = false;
             for(size_t j = 0; j < cp.size(); ++j) {
                 if(f_ongoing) {
-                    args.push_back(GeneralTypeToken(cp[j],command->args[j]));
+                    args.push_back(GeneralTypeToken(cp[j]));
                 }
                 else {
                     auto identf = get_type(cp[j],command->args[j]);
@@ -141,40 +141,36 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
                 shadow_return = true;
             }
 
-            Function fun = *get_function(name);
-
             argument_list alist = tools::parse_argument_list(lines[i].source[1]);
-
-            if(alist.size() != fun.params.size()) {
-                std::string err = "Too many/few arguments for function: " + name + "\n\t- Expected: " + std::to_string(fun.params.size()) + "\n\t- But got: " + std::to_string(alist.size());
-                throw errors::MWSMessageException{err,global::get_line()};
-            }
 
             for(size_t j = 0; j < alist.size(); ++j) {
                 alist[j] = tools::check4placeholder(alist[j]);
             }
 
             std::vector<Variable> args;
-            for(size_t j = 0; j < fun.params.size(); ++j) {
+            for(auto i : alist) {
                 try {
-                    if(!fun.params[j].matches(alist[j].to_variable())) {
-                        std::string err_msg = "Invalid argument:\n\t- Expected: " + var_t2token(fun.params[j].type).content + "\n\t- But got: " + var_t2token(alist[j].to_variable().type).content;
-                        throw errors::MWSMessageException(err_msg,global::get_line());
-                    }
-                    else {
-                        ++global::in_argument_list;
-                        args.push_back(alist[j].to_variable());
-                        --global::in_argument_list;
-                    }
+                    args.push_back(i.to_variable());
                 }
                 catch(errors::MWSMessageException& err) {
                     throw err; // TODO: better message
                 }
                 catch(...) {
-                    std::string err_msg = "Can't convert GeneralType " + general_t2token(alist[j].type).content + " to VariableType " + var_t2token(fun.params[j].type).content + " as function parameter for function: " + name;
+                    std::string err_msg = "Can't convert GeneralType " + general_t2token(i.type).content + " to VariableType as function parameter for function: " + name;
                     throw errors::MWSMessageException{err_msg,global::get_line()};
                 }
             }
+
+            Function* funptr = get_function(name,args);
+            if(funptr == nullptr) {
+                std::string err_msg = "No overload of function " + name + " matches agumentlist!\n- Got: [";
+                for(auto i : args) {
+                    err_msg += var_t2token(i.type).content + ",";
+                }
+                err_msg.pop_back();
+                throw errors::MWSMessageException{err_msg + "]",global::get_line()};
+            }
+            Function fun = *funptr;
 
             Variable vret = fun.run(args); 
             if(!fun.return_type.matches(vret)) {
@@ -399,11 +395,13 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
             obj.on_deconstruct = struc->on_deconstruct;
 
             for(auto& i : obj.methods) {
-                int sscope = i.second.scope_idx;
-                i.second.scope_idx = get_new_scope();
-                scopes[i.second.scope_idx] = scopes[sscope];
-                scopes[i.second.scope_idx].parent = obj.parent_scope;
-                scopes[i.second.scope_idx].index = i.second.scope_idx;
+                for(auto& j : i.second) {
+                    int sscope = j.scope_idx;
+                    j.scope_idx = get_new_scope();
+                    scopes[j.scope_idx] = scopes[sscope];
+                    scopes[j.scope_idx].parent = obj.parent_scope;
+                    scopes[j.scope_idx].index = j.scope_idx;
+                }
             }
             set_variable(instance_name,obj);
             if(has_method(obj,struct_name)) {
@@ -425,31 +423,26 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
 
             Object obj = *get_object(lines[i].source[0].content);
             Token method_name = lines[i].source[2];
-            Function* method = get_method(&obj,method_name);
-            if(method == nullptr) {
+
+            if(!has_method(obj,method_name)) {
                 throw errors::MWSMessageException{"Unknown object method: " + method_name.content,global::get_line()};
             }
 
             std::vector<Variable> args;
             std::vector<GeneralTypeToken> arglist = tools::parse_argument_list(lines[i].source[3]);
-            if(lines[i].source.size() != 4) {
-                throw errors::MWSMessageException{"Invalid object-method call!\n\t- Expected: object.method <args>...",global::get_line()};
-            }
-            if(arglist.size() != method->params.size()) {
-                std::string err = "Too many/few arguments for object method: " + method_name.content + "\n\t- Expected: " + std::to_string(method->params.size()) + "\n\t- But got: " + std::to_string(lines[i].source.size()-3);
-                throw errors::MWSMessageException{err,global::get_line()};
+
+            for(auto i : arglist) {
+                args.push_back(tools::check4placeholder(i).to_variable());
             }
 
-            for(size_t j = 0; j < method->params.size(); ++j) {
-                Variable garg = arglist[j].to_variable(); 
-                auto identf = garg.type;
-                if(!method->params[j].matches(garg)) {
-                    std::string err_msg = "Invalid argument:\n\t- Expected: " + var_t2token(method->params[j].type).content + "\n\t- But got: " + general_t2token(get_type(lines[i].source[j+3].content)).content + " (" + lines[i].source[j+3].content + ")";
-                    throw errors::MWSMessageException(err_msg,global::get_line());
+            Function* method = get_method(&obj,method_name,args);
+            if(method == nullptr) {
+                std::string err_msg = "No overload of method " + name + " matches agumentlist!\n- Got: [";
+                for(auto i : args) {
+                    err_msg += var_t2token(i.type).content + ",";
                 }
-                else {
-                    args.push_back(garg);
-                }
+                err_msg.pop_back();
+                throw errors::MWSMessageException{err_msg + "]",global::get_line()};
             }
 
             ret = run_method(&obj,method_name,args);

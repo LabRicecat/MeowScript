@@ -150,7 +150,7 @@ static std::vector<Command> commandlist = {
     }},*/
     {"func",
         {
-            car_Name,
+            car_Name | car_Function,
             car_ParameterList, 
             car_Operator, // ->
             car_Name | car_Struct, // ReturnValue
@@ -201,7 +201,7 @@ static std::vector<Command> commandlist = {
     }},
     {"func",
         {
-            car_Name,
+            car_Name | car_Function,
             car_ParameterList, 
             car_Compound | car_Expression | car_Name | car_String | car_Number
         },
@@ -227,7 +227,7 @@ static std::vector<Command> commandlist = {
     }},
     {"func",
         {
-            car_Name,
+            car_Name | car_Function,
             car_ParameterList, 
             car_Operator, // =>
             car_Compound | car_Expression | car_Name | car_String | car_Number | car_Ongoing
@@ -925,20 +925,50 @@ static std::vector<Command> commandlist = {
         }
         return general_null;
     }},
-    {"on_death", // TODO: maybe rework later
+    {"on_death", // TODO: werok with giving params!
         {
             car_Function,
+            car_ArgumentList,
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
         MWS_MUST_BE_IN_STRUCT()
         Object* current = current_scope()->current_obj.top();
+        argument_list alist = tools::parse_argument_list(args[1]);
+        
+        std::vector<Variable> vargs;
+        for(auto i : alist) {
+            args.push_back(tools::check4placeholder(i).to_variable()); //TODO: add catch for errors
+        }
+
+        Function* fptr = nullptr;
+        for(auto& i : current_scope()->functions) {
+            if(i.first == args[0].to_string()) {
+                for(auto& j : i.second) { 
+                    if(func_param_match(j,vargs)) {
+                        fptr = &j;
+                        goto OUT;
+                    }
+                }
+            }
+        }
+OUT:
+
+        if(fptr == nullptr && current_scope()->functions.count(args[0].to_string()) != 0) {
+            std::string err_msg = "No overload of method " + args[0].to_string() + " matches agumentlist!\n- Got: [";
+            for(auto i : vargs) {
+                err_msg += var_t2token(i.type).content + ",";
+            }
+            err_msg.pop_back();
+            throw errors::MWSMessageException{err_msg + "]",global::get_line()};
+        }   
+
         if(current_scope()->functions.count(args[0].to_string()) == 0) {
             throw errors::MWSMessageException{"Only methods can be tagged as \"on_death\"!",global::get_line()};
         }
-        if(current_scope()->functions[args[0].to_string()].params.size() != 0) {
+        if(current_scope()->functions[args[0].to_string()][0].params.size() != 0) {
             throw errors::MWSMessageException{"Only methods with no arguments can be tagged as \"on_death\"!",global::get_line()};
         }
-        current->on_deconstruct.push_back(args[0].to_string());
+        current->on_deconstruct.push_back(std::make_tuple(args[0].to_string(),vargs));
         return general_null;
     }},
 
