@@ -25,6 +25,8 @@ namespace global {
     inline int break_loop = 0;
     inline int continue_loop = 0;
     inline std::stack<unsigned int> line_count;
+    inline std::vector<std::string> imported_files;
+    bool is_imported(fs::path file);
     unsigned int get_line();
 
     inline std::vector<Variable> args;

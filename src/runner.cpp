@@ -141,12 +141,12 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
                 shadow_return = true;
             }
 
-            Function* fun = get_function(name);
+            Function fun = *get_function(name);
 
             argument_list alist = tools::parse_argument_list(lines[i].source[1]);
 
-            if(alist.size() != fun->params.size()) {
-                std::string err = "Too many/few arguments for function: " + name + "\n\t- Expected: " + std::to_string(fun->params.size()) + "\n\t- But got: " + std::to_string(alist.size());
+            if(alist.size() != fun.params.size()) {
+                std::string err = "Too many/few arguments for function: " + name + "\n\t- Expected: " + std::to_string(fun.params.size()) + "\n\t- But got: " + std::to_string(alist.size());
                 throw errors::MWSMessageException{err,global::get_line()};
             }
 
@@ -155,10 +155,10 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
             }
 
             std::vector<Variable> args;
-            for(size_t j = 0; j < fun->params.size(); ++j) {
+            for(size_t j = 0; j < fun.params.size(); ++j) {
                 try {
-                    if(fun->params[j].matches(alist[j].to_variable())) {
-                        std::string err_msg = "Invalid argument:\n\t- Expected: " + var_t2token(fun->params[j].type).content + "\n\t- But got: " + var_t2token(alist[j].to_variable().type).content;
+                    if(!fun.params[j].matches(alist[j].to_variable())) {
+                        std::string err_msg = "Invalid argument:\n\t- Expected: " + var_t2token(fun.params[j].type).content + "\n\t- But got: " + var_t2token(alist[j].to_variable().type).content;
                         throw errors::MWSMessageException(err_msg,global::get_line());
                     }
                     else {
@@ -168,20 +168,17 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
                     }
                 }
                 catch(errors::MWSMessageException& err) {
-                    std::string err_msg = "Can't convert GeneralType " + general_t2token(alist[j].type).content + " to VariableType " + var_t2token(fun->params[j].type).content + " as function parameter for function: " + name;
+                    throw err; // TODO: better message
+                }
+                catch(...) {
+                    std::string err_msg = "Can't convert GeneralType " + general_t2token(alist[j].type).content + " to VariableType " + var_t2token(fun.params[j].type).content + " as function parameter for function: " + name;
                     throw errors::MWSMessageException{err_msg,global::get_line()};
                 }
             }
 
-            Function cpy = *fun;
-            Function cpy2 = cpy;
-
-                // TODO: this is an ugly workaroung because after
-                // the line below it will only contain garbage for 
-                // some reason (???)
-            Variable vret = cpy2.run(args); 
-            if(!cpy2.return_type.matches(vret)) {
-                throw errors::MWSMessageException{"Invalid return type!\n\t- Expected: " + var_t2token(fun->return_type.type).content + "\n\t- But got: " + general_t2token(ret.type).content,global::get_line()};
+            Variable vret = fun.run(args); 
+            if(!fun.return_type.matches(vret)) {
+                throw errors::MWSMessageException{"Invalid return type!\n\t- Expected: " + var_t2token(fun.return_type.type).content + "\n\t- But got: " + general_t2token(ret.type).content,global::get_line()};
             }
             ret = vret;
             if(shadow_return) {
@@ -433,7 +430,7 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
                 throw errors::MWSMessageException{"Unknown object method: " + method_name.content,global::get_line()};
             }
 
-            std::vector<Variable> args; // TODO: add boring error handling
+            std::vector<Variable> args;
             std::vector<GeneralTypeToken> arglist = tools::parse_argument_list(lines[i].source[3]);
             if(lines[i].source.size() != 4) {
                 throw errors::MWSMessageException{"Invalid object-method call!\n\t- Expected: object.method <args>...",global::get_line()};

@@ -136,7 +136,7 @@ struct GeneralTypeToken {
                 type = General_type::DICTIONARY;
                 break;
             case Variable::Type::Object:
-                source = (std::string)"?";
+                source = (std::string)"#OBJECT#";
                 type = General_type::OBJECT;
                 use_save_obj = true;
                 saveobj = var.storage.obj;

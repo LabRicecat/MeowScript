@@ -230,7 +230,7 @@ static std::vector<Command> commandlist = {
             car_Name,
             car_ParameterList, 
             car_Operator, // =>
-            car_Expression | car_Name | car_String | car_Number | car_Ongoing
+            car_Compound | car_Expression | car_Name | car_String | car_Number | car_Ongoing
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
         MWS_CAN_BE_IN_STRUCT()
@@ -729,16 +729,20 @@ static std::vector<Command> commandlist = {
         fs::path pth = global::include_path.top();
         pth = pth.remove_filename().string() + args[0].source.content;
         fs::path pth2;
-        // TODO: fix double includes
+
         if(!fs::exists(pth)) {
             pth2 = pth.string() + ".mws";
             if(!fs::exists(pth2)) {
                 throw errors::MWSMessageException{"Trying to import unknown file: \"" + pth.string() + "\"",global::get_line()};
             }
-            return run_file(pth2.string(),true,false,-1,{},pth2,false,true);
+            pth = pth2;
         }
 
-        return run_file(pth.string(),true,false,-1,{},pth,false,true);
+        if(!global::is_imported(pth)) {
+            global::imported_files.push_back(pth);
+            return run_file(pth.string(),true,false,-1,{},pth,false,true);   
+        }
+        return general_null;
     }},
 
     {"event",
@@ -805,7 +809,7 @@ static std::vector<Command> commandlist = {
         std::vector<Variable> pargs;
         for(size_t j = 0; j < eve.params.size(); ++j) {
             try {
-                if(eve.params[j].type != Variable::Type::UNKNOWN && eve.params[j].type != general_t2var_t(alist[j].type)) {
+                if(!eve.params[j].matches(alist[j].to_variable())) {
                     std::string err_msg = "Invalid argument:\n\t- Expected: " + var_t2token(eve.params[j].type).content + "\n\t- But got: " + var_t2token(alist[j].to_variable().type).content;
                     throw errors::MWSMessageException(err_msg,global::get_line());
                 }
@@ -816,7 +820,10 @@ static std::vector<Command> commandlist = {
                 }
             }
             catch(errors::MWSMessageException& err) {
-                std::string err_msg = "Can't convert GeneralType " + general_t2token(alist[j].type).content + " to VariableType " + var_t2token(eve.params[j].type).content + " as function parameter for function: " + args[0].source.content;
+                throw err;
+            }
+            catch(...) {
+                std::string err_msg = "Can't convert GeneralType " + general_t2token(alist[j].type).content + " to VariableType " + var_t2token(eve.params[j].type).content + " as function parameter for event: " + args[0].source.content;
                 throw errors::MWSMessageException{err_msg,global::get_line()};
             }
         }
