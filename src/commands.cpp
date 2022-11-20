@@ -891,6 +891,41 @@ static std::vector<Command> commandlist = {
         }
         return general_null;
     }},
+    {"struct",
+        {
+            car_Name,
+            car_ArgumentList,
+            car_Compound,
+        },
+    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+        MWS_CAN_BE_IN_STRUCT()
+        args[2].source.content.erase(args[2].source.content.begin());
+        args[2].source.content.erase(args[2].source.content.begin()+args[2].source.content.size()-1);
+
+        auto alist = tools::parse_argument_list(args[1]);
+        std::vector<Object> structs;
+
+        Object struc;
+
+        for(auto i : alist) {
+            if(!is_struct(i.to_string())) {
+                throw errors::MWSMessageException{"Can't expand with unknown struct: " + i.to_string(),global::get_line()};
+            }
+            Object* st = get_struct(i.to_string());
+            struc.members.insert(st->members.begin(),st->members.end());
+            struc.methods.insert(st->methods.begin(),st->methods.end());
+            struc.structs.insert(st->structs.begin(),st->structs.end());
+        }
+
+        Object cons = construct_object(args[2]);
+        struc.members.insert(cons.members.begin(),cons.members.end());
+        struc.methods.insert(cons.methods.begin(),cons.methods.end());
+        struc.structs.insert(cons.structs.begin(),cons.structs.end());
+        if(!add_struct(args[0].source.content,struc)) {
+            throw errors::MWSMessageException{"Can't redefine struct: " + args[0].source.content,global::get_line()};
+        }
+        return general_null;
+    }},
     {"gen_setget",
         {
             car_Name,
