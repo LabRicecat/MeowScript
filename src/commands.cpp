@@ -981,7 +981,7 @@ static std::vector<Command> commandlist = {
         
         std::vector<Variable> vargs;
         for(auto i : alist) {
-            args.push_back(tools::check4placeholder(i).to_variable()); //TODO: add catch for errors
+            vargs.push_back(tools::check4placeholder(i).to_variable()); //TODO: add catch for errors
         }
 
         Function* fptr = nullptr;
@@ -1008,9 +1008,6 @@ OUT:
 
         if(current_scope()->functions.count(args[0].to_string()) == 0) {
             throw errors::MWSMessageException{"Only methods can be tagged as \"on_death\"!",global::get_line()};
-        }
-        if(current_scope()->functions[args[0].to_string()][0].params.size() != 0) {
-            throw errors::MWSMessageException{"Only methods with no arguments can be tagged as \"on_death\"!",global::get_line()};
         }
         current->on_deconstruct.push_back(std::make_tuple(args[0].to_string(),vargs));
         return general_null;
