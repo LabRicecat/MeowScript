@@ -13,9 +13,10 @@ A small interpreted, easy extendable programming language.
 |             | Compiler          | BuildTool     | Recomendet|
 |-------------|-------------------|---------------|-----------|
 | Linux       | gcc/clang         | cmake         |  -------  |
-| Windows     | mingw64-gcc/clang | nmake & cmake |   Msys2   |
-| MaxOS       | ---------         | ----------    |  -------  |
+| Windows*    | mingw64-gcc/clang | nmake & cmake |   Msys2   |
+| MacOS*      | ---------         | ----------    |  -------  |
 
+\* still not 100% supported
 ## Installing
 Execute this commands in your shell to download and build MeowScript.
 ```
