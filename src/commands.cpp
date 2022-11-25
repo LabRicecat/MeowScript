@@ -969,7 +969,7 @@ static std::vector<Command> commandlist = {
         }
         return general_null;
     }},
-    {"on_death", // TODO: werok with giving params!
+    {"on_death",
         {
             car_Function,
             car_ArgumentList,

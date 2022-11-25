@@ -1134,7 +1134,9 @@ std::vector<Method<Dictionary>> dictionary_method_list = {
             }
             catch(...) {
                 Variable v;
-                v.type = Variable::Type::VOID;
+                v.type = Variable::Type::String;
+                v.storage.string.content = i.to_string();
+                v.storage.string.in_quotes = true;
                 l.elements.push_back(v);
             }
         }
@@ -1157,7 +1159,9 @@ std::vector<Method<Dictionary>> dictionary_method_list = {
             }
             catch(...) {
                 Variable v;
-                v.type = Variable::Type::VOID;
+                v.type = Variable::Type::String;
+                v.storage.string.content = i.to_string();
+                v.storage.string.in_quotes = true;
                 l.elements.push_back(v);
             }
         }
