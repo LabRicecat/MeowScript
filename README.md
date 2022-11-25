@@ -26,7 +26,7 @@ $ cd build
 $ cmake ..
 $ make
 ```
-If you use Windows, you can run the interpreter!
+Now you can run the interpreter!
 ```
 $ meow-script --help
 ```
