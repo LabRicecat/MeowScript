@@ -65,8 +65,9 @@ Object MeowScript::construct_object(GeneralTypeToken context) {
     Object retobj;
     new_scope(-1);
     ++global::in_struct;
-    current_scope()->current_obj.push(&retobj);
+    current_scope()->current_obj.push(retobj);
     run_text(context.source.content,false,true,-1,{},"",false,true);
+    retobj = current_scope()->current_obj.top();
     current_scope()->current_obj.pop();
     --global::in_struct;
     retobj.members = current_scope()->vars;
@@ -141,7 +142,12 @@ Variable MeowScript::run_method(Object* obj, Token name, std::vector<Variable> a
     current_scope()->functions = obj->methods;
     current_scope()->structs = obj->structs;
 
+    current_scope()->current_obj.push(*obj);
+
     Variable ret = func->run(args,true);
+
+    *obj = current_scope()->current_obj.top();
+    current_scope()->current_obj.pop();
 
     obj->members = current_scope()->vars;
     obj->methods = current_scope()->functions;
@@ -150,4 +156,15 @@ Variable MeowScript::run_method(Object* obj, Token name, std::vector<Variable> a
     pop_scope(false);
 
     return ret;
+}
+
+bool MeowScript::sibling_method(std::string name) {
+    int index = current_scope()->index;
+    while(index > 0) {
+        if(!current_scope()->current_obj.empty() && has_method(current_scope()->current_obj.top(),name)) {
+            return true;
+        }
+        index = scopes[index].parent;
+    }
+    return false;
 }

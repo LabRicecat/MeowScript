@@ -45,6 +45,8 @@ Variable run_method(Object* obj, Token name, std::vector<Variable> args);
 //  `obj1`
 bool struct_matches(Object* obj1, Object* obj2);
 
+bool sibling_method(std::string name);
+
 MEOWSCRIPT_HEADER_END
 
 #endif

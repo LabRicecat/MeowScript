@@ -597,8 +597,8 @@ static std::vector<Command> commandlist = {
                 throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: String\n\t- But got: " + general_t2token(output.type).content,global::get_line()};
             }
             std::cout << output.source.content;
-            std::cout.flush();
         }
+        std::cout.flush();
         std::string inp;
         std::getline(std::cin,inp);
         
@@ -976,7 +976,7 @@ static std::vector<Command> commandlist = {
         },
     [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
         MWS_MUST_BE_IN_STRUCT()
-        Object* current = current_scope()->current_obj.top();
+        Object current = current_scope()->current_obj.top();
         argument_list alist = tools::parse_argument_list(args[1]);
         
         std::vector<Variable> vargs;
@@ -1009,7 +1009,7 @@ OUT:
         if(current_scope()->functions.count(args[0].to_string()) == 0) {
             throw errors::MWSMessageException{"Only methods can be tagged as \"on_death\"!",global::get_line()};
         }
-        current->on_deconstruct.push_back(std::make_tuple(args[0].to_string(),vargs));
+        current_scope()->current_obj.top().on_deconstruct.push_back(std::make_tuple(args[0].to_string(),vargs));
         return general_null;
     }},
 

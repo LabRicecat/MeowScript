@@ -25,7 +25,7 @@ struct Scope {
 
     unsigned int current_line = 1;
 
-    std::stack<Object*> current_obj;
+    std::stack<Object> current_obj;
 };
 
 inline std::vector<Scope> scopes;

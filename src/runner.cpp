@@ -171,8 +171,32 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
                 throw errors::MWSMessageException{err_msg + "]",global::get_line()};
             }
             Function fun = *funptr;
+            
+            Variable vret;
+            if(sibling_method(name)) {
+                Object obj = current_scope()->current_obj.top();
+                MeowScript::new_scope(obj.parent_scope);
 
-            Variable vret = fun.run(args); 
+                current_scope()->vars = obj.members;
+                current_scope()->functions = obj.methods;
+                current_scope()->structs = obj.structs;
+                current_scope()->current_obj.push(obj);
+
+                vret = fun.run(args,true); 
+
+                current_scope()->current_obj.pop();
+
+                obj.members = current_scope()->vars;
+                obj.methods = current_scope()->functions;
+                obj.structs = current_scope()->structs;
+                
+                current_scope()->current_obj.top() = obj;
+                pop_scope(false);
+            }
+            else {
+                vret = fun.run(args); 
+            }
+            
             if(!fun.return_type.matches(vret)) {
                 throw errors::MWSMessageException{"Invalid return type!\n\t- Expected: " + var_t2token(fun.return_type.type).content + "\n\t- But got: " + general_t2token(ret.type).content,global::get_line()};
             }
