@@ -17,6 +17,7 @@ A small interpreted, easy extendable programming language.
 | MacOS*      | ---------         | ----------    |  -------  |
 
 \* still not 100% supported
+
 ## Installing
 Execute this commands in your shell to download and build MeowScript.
 ```

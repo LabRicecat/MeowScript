@@ -4,7 +4,7 @@ project(meow-script
     LANGUAGES CXX
     DESCRIPTION "An easy extendable scripting language"
 )
-
+set(CMAKE_CXX_STANDARD 17)
 set(BINARY meow-script)
 set(SOURCE 
     src/commands.cpp
@@ -27,9 +27,10 @@ set(SOURCE
     )
 
 add_executable(${BINARY} ${SOURCE})
+target_link_libraries(meow-script dl)
 
 # can be ignored if it errors
 if(UNIX)
-target_compile_options(${BINARY} PUBLIC -g -rdynamic -Wl,-E -ldl -fPIC -Wl,--export-dynamic)
-add_compile_options(-g -rdynamic -Wl,-E -ldl -fPIC -Wl,--export-dynamic)
+target_compile_options(${BINARY} PUBLIC -g -rdynamic -Wl,-E -fPIC -Wl,--export-dynamic)
+add_compile_options(-g -rdynamic -Wl,-E -fPIC -Wl,--export-dynamic)
 endif()
