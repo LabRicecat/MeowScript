@@ -10,11 +10,11 @@
 A small interpreted, easy extendable programming language.  
 
 ## Requirements
-|             | Compiler          | BuildTool     | Recomendet|
-|-------------|-------------------|---------------|-----------|
-| Linux       | gcc/clang         | cmake         |  -------  |
-| Windows*    | mingw64-gcc/clang | nmake & cmake |   Msys2   |
-| MacOS*      | ---------         | ----------    |  -------  |
+|             | Compiler            | BuildTool     | Recomendet|
+|-------------|---------------------|---------------|-----------|
+| Linux       | g++/clang++         | cmake         |  -------  |
+| Windows*    | mingw64-g++/clang++ | nmake & cmake |   Msys2   |
+| MacOS*      | ---------           | ----------    |  -------  |
 
 \* still not 100% supported
 
