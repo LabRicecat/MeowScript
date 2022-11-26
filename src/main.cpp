@@ -11,8 +11,8 @@ void print_help() {
               << " --help, -h \t: Prints this and exits\n"
               << " --version, -v \t: Prints the version and exits\n"
               << " --shell, -s \t: Opens the MeowScript shell\n\n"
-              << "(c) SirWolf 2022\n"
-              << "Github repo: https://github.com/SirWolfi/MeowScript\n";
+              << "(c) LabRiceCat 2022\n"
+              << "Github repo: https://github.com/LabRiceCat/MeowScript\n";
 }
 
 void error_message_pretty(MeowScript::errors::MWSMessageException& err) {
@@ -27,12 +27,14 @@ void error_message_pretty(MeowScript::errors::MWSMessageException& err) {
     }
 }
 
+// #define MEOWSCRIPT_DEBUG_MODE
+
 int main(int argc, char** argv) {
     if(argc == 1) {
         print_help();
         return 0;
     }
-
+    
     std::string arg = std::string(argv[1]);
 
     std::vector<std::string> args;
@@ -48,6 +50,11 @@ int main(int argc, char** argv) {
         print_help();
         return 0;
     }
+#ifdef MEOWSCRIPT_DEBUG_MODE
+    else if(arg == "--debug" || arg == "-d") {
+        return 0;
+    }
+#endif
     else if(arg == "--version" || arg == "-v") {
         std::cout << MEOWSCRIPT_VERSION_STR << "\n";
         return 0;
@@ -56,11 +63,11 @@ int main(int argc, char** argv) {
         MeowScript::new_scope();
         std::string input;
         std::cout << ">>> MeowScript shell <<<\n"
-            << "Type `exit` to exit the shell.\n";
+            << "Type `:exit` to exit the shell.\n";
         while(true) {
             std::cout << "$> ";
             std::getline(std::cin,input);
-            if(input == "exit") {
+            if(input == ":exit" || input == ":quit" || input == ":q" || input == ":e") {
                 MeowScript::pop_scope();
                 return 0;
             }

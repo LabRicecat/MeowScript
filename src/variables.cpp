@@ -7,6 +7,7 @@
 #include "../inc/tools.hpp"
 #include "../inc/modules.hpp"
 #include "../inc/scopes.hpp"
+#include "../inc/expressions.hpp"
 
 #include <algorithm>
 
@@ -24,6 +25,8 @@ Variable::Type MeowScript::general_t2var_t(General_type type) {
             return Variable::Type::VOID;
         case General_type::DICTIONARY:
             return Variable::Type::Dictionary;
+        case General_type::OBJECT:
+            return Variable::Type::Object;
         default:
             std::string err = "Can't cast GeneralType " + general_t2token(type).content + " to VariableType!";
             throw errors::MWSMessageException(err,global::get_line());
@@ -40,6 +43,8 @@ General_type MeowScript::var_t2general_t(Variable::Type type) {
             return General_type::NUMBER;
         case Variable::Type::VOID:
             return General_type::VOID;
+        case Variable::Type::Object:
+            return General_type::OBJECT;
         default:
             return General_type::UNKNOWN;
     }
@@ -67,6 +72,8 @@ Variable MeowScript::make_variable(Token context, Variable::Type ty_) {
             return Variable(context.content);
         case Variable::Type::Dictionary:
             {Variable ret; ret.type = Variable::Type::Dictionary; ret.storage.dict = dic_from_token(context); return ret;}
+        //case Variable::Type::Object: 
+        //    return *get_object(context.content);
         case Variable::Type::VOID:
             {Variable ret; ret.type = type; return ret;}
     }
@@ -156,11 +163,14 @@ Token MeowScript::general_t2token(General_type type) {
         "Name",
         "Expression",
         "Argumentlist",
+        "Parameterlist",
         "Operator",
         "Module",
         "Event",
         "Keyword",
         "Dictionary",
+        "Struct",
+        "Object",
         "Unknown",
         "Void"
     };
@@ -173,6 +183,7 @@ Token MeowScript::var_t2token(Variable::Type type) {
         "String",
         "List",
         "Dictionary",
+        "Object",
         "UNKNOWN",
         "Any",
         "Void"
@@ -186,6 +197,7 @@ Variable::Type MeowScript::token2var_t(Token token) {
         "String",
         "List",
         "Dictionary",
+        "Object",
         "UNKNOWN",
         "Any",
         "Void"
@@ -199,11 +211,23 @@ Variable::Type MeowScript::token2var_t(Token token) {
 }
 
 Variable MeowScript::GeneralTypeToken::to_variable() const {
+    if(type == General_type::OBJECT) {
+        Variable ret;
+        if(use_save_obj) {
+            ret.storage.obj = saveobj;
+            ret.type = Variable::Type::Object;
+            return ret;
+        }
+        Object* obj = get_object(source.content);
+        ret.type = Variable::Type::Object;
+        ret.storage.obj = *obj;
+        return ret;
+    }
     try {
         return make_variable(source,general_t2var_t(type));
     }
     catch(...) {
-        std::string merr = "Can't cast GeneralType " + general_t2token(type).content + " to VariableType!";
+        std::string merr = "Can't cast GeneralType " + general_t2token(type).content + " (\"" + this->source.content + "\") to VariableType!";
         throw errors::MWSMessageException(merr,global::get_line());
     }
 }
@@ -235,11 +259,14 @@ General_type MeowScript::get_type(Token context, CommandArgReqirement expected) 
     if(context.in_quotes || (context.content.front() == '"' && context.content.back() == '"')) {
         return General_type::STRING;
     }
+    if(is_expression(context.content) && expected.matches(General_type::EXPRESSION)) {
+        return General_type::EXPRESSION;
+    }
+    if(is_valid_parameterlist(context) && expected.matches(General_type::PARAMETERLIST)) {
+        return General_type::PARAMETERLIST;
+    }
     if(is_valid_argumentlist(context) && expected.matches(General_type::ARGUMENTLIST)) {
         return General_type::ARGUMENTLIST;
-    }
-    if(brace_check(context,'(',')') && expected.matches(General_type::EXPRESSION)) {
-        return General_type::EXPRESSION;
     }
     if(is_dictionary(context) && expected.matches(General_type::DICTIONARY)) {
         return General_type::DICTIONARY;
@@ -265,6 +292,9 @@ General_type MeowScript::get_type(Token context, CommandArgReqirement expected) 
     if(is_known_keyword(context)) {
         return General_type::KEYWORD;
     }
+    if(is_struct(context.content)) {
+        return General_type::STRUCT;
+    }
     if(is_valid_name(context)) {
         return General_type::NAME;
     }
@@ -273,6 +303,7 @@ General_type MeowScript::get_type(Token context, CommandArgReqirement expected) 
     }
     return General_type::UNKNOWN;
 }
+
 
 std::string MeowScript::Variable::to_string() const {
     if(type == Variable::Type::Number) {
@@ -309,12 +340,41 @@ bool MeowScript::Variable::set(List list) {
     return true;
 }
 bool MeowScript::Variable::set(long double num) {
-    if((type != Variable::Type::Number && fixed_type) || constant) {
+    if((type != Variable::Type::ANY && type != Variable::Type::Number && fixed_type) || constant) {
         return false;
     }
     storage.number = num;
     type = Variable::Type::Number;
     return true;
+}
+
+bool MeowScript::Variable::set(Variable var) {
+    if((type != Variable::Type::ANY && type != var.type && fixed_type) || constant) {
+        return false;
+    }
+    storage = var.storage;
+    type = var.type;
+    return true;
+}
+
+bool MeowScript::matches(Variable::Type type1, General_type type2) {
+    /*if(type2 == General_type::STRUCT || type1 > Variable::Type::OUT_OF_RANGE) {
+        return ( 
+            (type2 == General_type::OBJECT && type1.struc_name == type2.struc_name) 
+                || 
+            (type1 == Variable::Type::Object && type1.struc_name == type2.struc_name)
+            ); 
+    }*/
+    return var_t2general_t(type1) == type2;
+}
+
+bool matches(std::vector<Variable::Type> types, General_type gtype) {
+    for(auto i : types) {
+        if(matches(i,gtype)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 std::string MeowScript::List::to_string() const {
@@ -1074,7 +1134,9 @@ std::vector<Method<Dictionary>> dictionary_method_list = {
             }
             catch(...) {
                 Variable v;
-                v.type = Variable::Type::VOID;
+                v.type = Variable::Type::String;
+                v.storage.string.content = i.to_string();
+                v.storage.string.in_quotes = true;
                 l.elements.push_back(v);
             }
         }
@@ -1097,7 +1159,9 @@ std::vector<Method<Dictionary>> dictionary_method_list = {
             }
             catch(...) {
                 Variable v;
-                v.type = Variable::Type::VOID;
+                v.type = Variable::Type::String;
+                v.storage.string.content = i.to_string();
+                v.storage.string.in_quotes = true;
                 l.elements.push_back(v);
             }
         }

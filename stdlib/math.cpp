@@ -162,6 +162,91 @@ public:
                 }
                 return std::log10(v.to_variable().storage.number);
             }}
+        ).add_command(
+            {"int",
+            {
+                car_Number | car_PlaceHolderAble
+            },
+            [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+                auto v = tools::check4placeholder(args[0]);
+                if(v.type != General_type::NUMBER) {
+                    throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\t- But got: " + general_t2token(v.type).content,global::get_line()};
+                }
+                return (int)(v.to_variable().storage.number);
+            }}
+        ).add_command(
+            {"round",
+            {
+                car_Number | car_PlaceHolderAble,
+                car_Number | car_PlaceHolderAble
+            },
+            [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+                auto v = tools::check4placeholder(args[0]);
+                if(v.type != General_type::NUMBER) {
+                    throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\t- But got: " + general_t2token(v.type).content,global::get_line()};
+                }
+                auto rto = tools::check4placeholder(args[1]);
+                if(rto.type != General_type::NUMBER) {
+                    throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\t- But got: " + general_t2token(rto.type).content,global::get_line()};
+                }
+                Variable vv = v.to_variable();
+                Variable rtov = rto.to_variable().storage.number;
+                vv.storage.number *= pow(10,rtov.storage.number);
+                vv.storage.number += 0.5;
+                vv.storage.number = (int)vv.storage.number;
+                vv.storage.number /= pow(10,rtov.storage.number);
+
+                return vv.storage.number;
+            }}
+        ).add_command(
+            {"ceil",
+            {
+                car_Number | car_PlaceHolderAble,
+                car_Number | car_PlaceHolderAble
+            },
+            [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+                auto v = tools::check4placeholder(args[0]);
+                if(v.type != General_type::NUMBER) {
+                    throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\t- But got: " + general_t2token(v.type).content,global::get_line()};
+                }
+                auto rto = tools::check4placeholder(args[1]);
+                if(rto.type != General_type::NUMBER) {
+                    throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\t- But got: " + general_t2token(rto.type).content,global::get_line()};
+                }
+                Variable vv = v.to_variable();
+                Variable rtov = rto.to_variable().storage.number;
+                vv.storage.number *= pow(10,rtov.storage.number);
+                if((int)vv.storage.number*10 % 10 != 0) {
+                    vv.storage.number += 1;
+                }
+                vv.storage.number = (int)vv.storage.number;
+                vv.storage.number /= pow(10,rtov.storage.number);
+
+                return vv.storage.number;
+            }}
+        ).add_command(
+            {"floor",
+            {
+                car_Number | car_PlaceHolderAble,
+                car_Number | car_PlaceHolderAble
+            },
+            [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+                auto v = tools::check4placeholder(args[0]);
+                if(v.type != General_type::NUMBER) {
+                    throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\t- But got: " + general_t2token(v.type).content,global::get_line()};
+                }
+                auto rto = tools::check4placeholder(args[1]);
+                if(rto.type != General_type::NUMBER) {
+                    throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\t- But got: " + general_t2token(rto.type).content,global::get_line()};
+                }
+                Variable vv = v.to_variable();
+                Variable rtov = rto.to_variable().storage.number;
+                vv.storage.number *= pow(10,rtov.storage.number);
+                vv.storage.number = (int)vv.storage.number;
+                vv.storage.number /= pow(10,rtov.storage.number);
+
+                return vv.storage.number;
+            }}
         );
         
         math.enabled = false;

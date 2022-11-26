@@ -1,0 +1,5 @@
+import "menu"
+
+Menu menu("Cool menu!",["Opt1","Opt2","Opt3"])
+
+menu.request_option()

@@ -1,0 +1,24 @@
+new nodes {}
+new error_bit 0
+
+func node_count()->Number {
+    return {nodes.length()}
+}
+
+func add_node(name :: String, value)->Void {
+    if({nodes.has(name)}) {
+        set error_bit 1
+    }
+    else {
+        nodes.set(name,value)
+        set error_bit 0
+    }
+}
+
+func get_node()->Any {
+    if({nodes.has(name)} == 0) {
+        set error_bit 1
+        return 0
+    }
+    return {nodes.get(name)}
+}

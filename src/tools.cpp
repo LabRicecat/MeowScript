@@ -20,43 +20,39 @@ argument_list MeowScript::tools::parse_argument_list(Token context) {
         return argument_list();
     }
 
-    Token tk;
-    int in_br = false;
-    bool in_q = false;
-    ++global::in_argument_list;
-    for(auto i : context.content) {
-        if(i == ',' && in_br == 0 && !in_q) {
-            if(tk.content == "" && !tk.in_quotes) {
-                --global::in_argument_list;
+    auto lexed = lex_text(context);
+    std::vector<Token> line;
+    for(auto i : lexed)
+        for(auto j : i.source) 
+            line.push_back(j);
+    
+    GeneralTypeToken last = general_null;
+    bool found_sl = true;
+
+    for(auto i : line) {
+        if(i.content == ",") {
+            if(last == general_null) {
                 return argument_list();
             }
-            ret.push_back(tools::check4replace(tk));
-
-            tk.content = "";
-            tk.in_quotes = false;
+            ret.push_back(last);
+            last = general_null;
+            found_sl = true;
         }
-        else if(i == '"' && in_br == 0) {
-            in_q = !in_q;
-            tk.content += i;
+        else if(found_sl) {
+            last = i;
+            found_sl = false;
         }
-        else if(is_open_brace(i) && !in_q) {
-            ++in_br;
-            tk.content += i;
-        }
-        else if(is_closing_brace(i) && !in_q) {
-            --in_br;
-            tk.content += i;
-        }
-        else if(!is_newline(i) && i != ' ' && i != '\t' || in_br != 0 || in_q) {
-            tk.content += i;
+        else {
+            return argument_list();
         }
     }
-    if(tk.content != "" || tk.in_quotes) {
-        ret.push_back(tools::check4replace(tk));
-    }
-    --global::in_argument_list;
-    if(in_q || in_br) {
-        --global::in_argument_list;
+    if(last != general_null) {
+        if(!found_sl) {
+            ret.push_back(last);
+        }
+        else {
+            return argument_list();
+        }
     }
 
     return ret;
@@ -111,7 +107,7 @@ GeneralTypeToken& Dictionary::operator[](GeneralTypeToken gtt) {
     return values().back();
 }
 
-std::tuple<std::vector<std::string>,std::vector<Variable::Type>> MeowScript::tools::parse_function_params(Token context) {
+std::vector<Parameter> MeowScript::tools::parse_function_params(Token context) {
     if(brace_check(context,'(',')')) {
         context.content.erase(context.content.begin());
         context.content.erase(context.content.begin()+context.content.size()-1);
@@ -120,8 +116,7 @@ std::tuple<std::vector<std::string>,std::vector<Variable::Type>> MeowScript::too
     if(lines.empty()) {
         return {};
     }
-    std::vector<Variable::Type> l2;
-    std::vector<std::string> l1;
+    std::vector<Parameter> ret;
     std::vector<Token> line;
     for(auto i : lines) {
         for(auto j : i.source) {
@@ -170,27 +165,30 @@ std::tuple<std::vector<std::string>,std::vector<Variable::Type>> MeowScript::too
             if(!is_valid_name(i[0])) {
                 throw errors::MWSMessageException{"Enexpected token: " + i[0].content,global::get_line()};
             }
-            l1.push_back(i[0]);
-            l2.push_back(Variable::Type::UNKNOWN);
+            ret.push_back(Parameter(Variable::Type::UNKNOWN,i[0]));
         }
         else if(i.size() == 3) {
             if(!is_valid_name(i[0])) {
                 throw errors::MWSMessageException{"Enexpected token: " + i[0].content,global::get_line()};
             }
-            if(i[1].content != "::") {
+            if(i[1].content != "::" && i[1].content != ":") {
                 throw errors::MWSMessageException{"Invalid argument format!",global::get_line()};
             }
-            if(!is_valid_var_t(i[2])) {
-                throw errors::MWSMessageException{i[2].content + " is not a known VariableType or class!",global::get_line()};
+            if(!is_struct(i[2]) && !is_valid_var_t(i[2])) {
+                throw errors::MWSMessageException{i[2].content + " is not a known VariableType or struct!",global::get_line()};
             }
-            l1.push_back(i[0]);
-            l2.push_back(token2var_t(i[2]));
+            if(is_struct(i[2])) {
+                ret.push_back(Parameter(Variable::Type::Object,i[0],i[2]));
+            }
+            else {
+                ret.push_back(Parameter(token2var_t(i[2]),i[0]));
+            }
         }
         else {
             throw errors::MWSMessageException{"Invalid argument format!",global::get_line()};
         }
     }
-    return std::make_tuple(l1,l2);
+    return ret;
 }
 
 GeneralTypeToken MeowScript::tools::check4var(GeneralTypeToken token) {
@@ -206,11 +204,12 @@ GeneralTypeToken MeowScript::tools::check4var(GeneralTypeToken token) {
 GeneralTypeToken MeowScript::tools::check4compound(GeneralTypeToken token) {
     if(token.type == General_type::COMPOUND) {
         token.source.content.erase(token.source.content.begin());
-        //token.source = remove_unneeded_chars(token.source);
         token.source.content.erase(token.source.content.begin()+token.source.content.size()-1);
-        //token.source = remove_unneeded_chars(token.source);
         ++global::in_compound;
+        int saved_istruct = global::in_struct;
+        global::in_struct = 0;
         GeneralTypeToken ret = run_text(token.source,false);
+        global::in_struct = saved_istruct;
         --global::in_compound;
         //if(ret.type == General_type::VOID) {
         //    throw errors::MWSMessageException{"Compound did not return anything!",global::get_line()};
@@ -243,7 +242,7 @@ GeneralTypeToken MeowScript::tools::check4replace(GeneralTypeToken token) {
 }
 
 Token MeowScript::tools::check4replace(Token token) {
-    if(replaces.count(token.content) != 0) {
+    if(replaces.count(token.content) != 0 && !token.in_quotes) {
         return replaces[token.content].to_string();
     }
     return token;

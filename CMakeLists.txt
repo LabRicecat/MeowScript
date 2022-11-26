@@ -13,12 +13,13 @@ set(SOURCE
     src/global.cpp 
     src/main.cpp 
     src/modules.cpp 
-    src/patterns.cpp 
+    src/objects.cpp
     src/reader.cpp
     src/runner.cpp
     src/scopes.cpp
     src/tools.cpp 
     src/variables.cpp 
+    
 
     stdlib/filesystem.cpp 
     stdlib/math.cpp 

@@ -3,13 +3,22 @@
 
 MEOWSCRIPT_SOURCE_FILE
 
+bool MeowScript::global::is_imported(fs::path file) {
+    for(auto i : imported_files) {
+        if(i == file.string()) {
+            return true;
+        }
+    }
+    return false;
+}
+
 unsigned int MeowScript::global::get_line() {
     if(current_scope()->index == 0) {
         return current_scope()->current_line;
     }
     unsigned int line = 0;
-    unsigned int index = current_scope()->index;
-    while(index != 0) {
+    int index = current_scope()->index;
+    while(index > 0) {
         line += scopes[index].current_line;
         index = scopes[index].parent;
     }

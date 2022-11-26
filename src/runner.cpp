@@ -1,6 +1,8 @@
 #include "../inc/runner.hpp"
 #include "../inc/tools.hpp"
 #include "../inc/modules.hpp"
+#include "../inc/objects.hpp"
+#include "../inc/expressions.hpp"
 
 MEOWSCRIPT_SOURCE_FILE
 
@@ -39,7 +41,7 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
 
         std::vector<General_type> identf_line;
         identf_line.push_back(get_type(lines[i].source[0]));
-        global::add_trace(global::get_line(),tools::until_newline(lines[i].source),global::include_path.top().string());
+        global::add_trace(global::get_line(),tools::until_newline(lines[i].source),global::include_path.empty() ? std::filesystem::current_path().string() : global::include_path.top().string());
 
         while(identf_line.front() == General_type::COMPOUND) {
             lines[i].source[0] = tools::check4compound(lines[i].source[0]).to_string();
@@ -48,28 +50,67 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
 
         std::string name = lines[i].source[0];
 
-        if(identf_line.front() == General_type::COMMAND) {
-            Command* command = get_command(name);
+        std::string str_line;
+        for(auto i : lines[i].source) {
+            for(size_t j = 0; j < i.content.size(); ++j) {
+                if(i.content[j] == '\"') {
+                    i.content.insert(i.content.end() - 2 - j,'\\');
+                    ++j;
+                }
+            }
+            if(i.in_quotes) {
+                i = "\"" + i.content + "\"";
+            }
+            str_line += " " + i.content;
+        }
+
+        if(get_type(str_line,car_Expression) != General_type::EXPRESSION && is_expression("(" + str_line + ")")) {
+            Variable result = parse_expression("(" + str_line + ")");
+            ret = result;
+        }
+        else if(identf_line.front() == General_type::COMMAND) {
+            auto cp = lines[i].source;
+            if(cp.size() != 0)
+                cp.erase(cp.begin());
+            Command* command = get_command_overload(name,cp);
 
             std::vector<GeneralTypeToken> args;
             identf_line.erase(identf_line.begin());
-            if(command->args.size() != lines[i].source.size()-1) {
+            if(command == nullptr) {
+                std::string err_msg = "No overload of command \"" + name + "\" matches arglist!\n\t- Got: [";
+                for(size_t k = 0; k < cp.size(); ++k) {
+                    err_msg += (k == 0 ? "":", ") + general_t2token(get_type(cp[k])).content;
+                }
+                throw errors::MWSMessageException(err_msg + "]",global::get_line());
+            }
+            if((command->args.size() == 0 || !(command->args.back().matches(car_Ongoing))) && command->args.size() != lines[i].source.size()-1) {
                 std::string err = "Too many/few arguments for command: " + command->name + "\n\t- Expected: " + std::to_string(command->args.size()) + "\n\t- But got: " + std::to_string(lines[i].source.size()-1);
                 throw errors::MWSMessageException{err,global::get_line()};
             }
 
-            for(size_t j = 0; j < command->args.size(); ++j) {
-                auto identf = get_type(lines[i].source[j+1],command->args[j]);
-                if(!command->args[j].matches(identf)) {
-                    std::string err_msg = "Invalid argument:\n\t- Expected: [";
-                    for(size_t k = 0; k < command->args[j].carry.size(); ++k) {
-                        err_msg += (k == 0 ? "":",") + general_t2token(General_type(command->args[j].carry[k]-1)).content;
-                    }
-                    err_msg += "]\n\t- But got: " + general_t2token(identf).content + " (" + lines[i].source[j+1].content + ")";
-                    throw errors::MWSMessageException(err_msg,global::get_line());
+            bool f_ongoing = false;
+            for(size_t j = 0; j < cp.size(); ++j) {
+                if(f_ongoing) {
+                    args.push_back(GeneralTypeToken(cp[j]));
                 }
                 else {
-                    args.push_back(GeneralTypeToken(lines[i].source[j+1]));
+                    auto identf = get_type(cp[j],command->args[j]);
+                    if(command->args[j].matches(car_Ongoing)) {
+                        f_ongoing = true;
+                        args.push_back(GeneralTypeToken(cp[j]));
+                        continue;
+                    }
+                    if(!command->args[j].matches(identf)) {
+                        std::string err_msg = "Invalid argument:\n\t- Expected: [";
+                        for(size_t k = 0; k < command->args[j].carry.size(); ++k) {
+                            err_msg += (k == 0 ? "":",") + general_t2token(General_type(command->args[j].carry[k]-1)).content;
+                        }
+                        err_msg += "]\n\t- But got: " + general_t2token(identf).content + " (" + cp[j].content + ")";
+                        throw errors::MWSMessageException(err_msg,global::get_line());
+                    }
+                    else {
+                        args.push_back(GeneralTypeToken(cp[j],command->args[j]));
+                    }
                 }
             }
 
@@ -83,7 +124,8 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
             if(identf_line.size() > 3 || identf_line.size() < 2) {
                 throw errors::MWSMessageException{"Too many/few arguments for primitiv function call!\n- Call Sytax: name(<args>)[!]",global::get_line()};
             }
-            if(identf_line[1] != General_type::ARGUMENTLIST) {
+            auto arglist = get_type(lines[i].source[1],General_type::ARGUMENTLIST);
+            if(arglist != General_type::ARGUMENTLIST) {
                 std::string err = "Unexpected token after function call:\n\t- Expected: Argumentlist\n\t- But got: " + (identf_line.size() != 1 ? general_t2token(identf_line[1]).content : "VOID");
                 throw errors::MWSMessageException{err,global::get_line()};
             }
@@ -99,45 +141,66 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
                 shadow_return = true;
             }
 
-            Function* fun = get_function(name);
-
             argument_list alist = tools::parse_argument_list(lines[i].source[1]);
-
-            if(alist.size() != fun->args.size()) {
-                std::string err = "Too many/few arguments for function: " + name + "\n\t- Expected: " + std::to_string(fun->args.size()) + "\n\t- But got: " + std::to_string(alist.size());
-                throw errors::MWSMessageException{err,global::get_line()};
-            }
 
             for(size_t j = 0; j < alist.size(); ++j) {
                 alist[j] = tools::check4placeholder(alist[j]);
             }
 
             std::vector<Variable> args;
-            for(size_t j = 0; j < fun->args.size(); ++j) {
+            for(auto i : alist) {
                 try {
-                    if(fun->args[j] != Variable::Type::UNKNOWN && fun->args[j] != general_t2var_t(alist[j].type)) {
-                        std::string err_msg = "Invalid argument:\n\t- Expected: " + var_t2token(fun->args[j]).content + "\n\t- But got: " + var_t2token(alist[j].to_variable().type).content;
-                        throw errors::MWSMessageException(err_msg,global::get_line());
-                    }
-                    else {
-                        ++global::in_argument_list;
-                        args.push_back(alist[j].to_variable());
-                        --global::in_argument_list;
-                    }
+                    args.push_back(i.to_variable());
                 }
                 catch(errors::MWSMessageException& err) {
-                    std::string err_msg = "Can't convert GeneralType " + general_t2token(alist[j].type).content + " to VariableType " + var_t2token(fun->args[j]).content + " as function parameter for function: " + name;
+                    throw err; // TODO: better message
+                }
+                catch(...) {
+                    std::string err_msg = "Can't convert GeneralType " + general_t2token(i.type).content + " to VariableType as function parameter for function: " + name;
                     throw errors::MWSMessageException{err_msg,global::get_line()};
                 }
             }
 
-            ret = GeneralTypeToken(fun->run(args));
-            if(fun->return_type == Variable::Type::VOID && ret.type != General_type::UNKNOWN && ret.type != General_type::VOID) {
-                throw errors::MWSMessageException{"Invalid return type!\n\t- Expected: Void\n\t- But got: " + general_t2token(ret.type).content,global::get_line()};
+            Function* funptr = get_function(name,args);
+            if(funptr == nullptr) {
+                std::string err_msg = "No overload of function " + name + " matches agumentlist!\n- Got: [";
+                for(auto i : args) {
+                    err_msg += var_t2token(i.type).content + ",";
+                }
+                err_msg.pop_back();
+                throw errors::MWSMessageException{err_msg + "]",global::get_line()};
             }
-            else if(fun->return_type != Variable::Type::VOID && fun->return_type != Variable::Type::ANY && var_t2general_t(fun->return_type) != ret.type) {
-                throw errors::MWSMessageException{"Invalid return type!\n\t- Expected: " + var_t2token(fun->return_type).content + "\n\t- But got: " + general_t2token(ret.type).content,global::get_line()};
+            Function fun = *funptr;
+            
+            Variable vret;
+            if(sibling_method(name)) {
+                Object obj = current_scope()->current_obj.top();
+                MeowScript::new_scope(obj.parent_scope);
+
+                current_scope()->vars = obj.members;
+                current_scope()->functions = obj.methods;
+                current_scope()->structs = obj.structs;
+                current_scope()->current_obj.push(obj);
+
+                vret = fun.run(args,true); 
+
+                current_scope()->current_obj.pop();
+
+                obj.members = current_scope()->vars;
+                obj.methods = current_scope()->functions;
+                obj.structs = current_scope()->structs;
+                
+                current_scope()->current_obj.top() = obj;
+                pop_scope(false);
             }
+            else {
+                vret = fun.run(args); 
+            }
+            
+            if(!fun.return_type.matches(vret)) {
+                throw errors::MWSMessageException{"Invalid return type!\n\t- Expected: " + var_t2token(fun.return_type.type).content + "\n\t- But got: " + general_t2token(ret.type).content,global::get_line()};
+            }
+            ret = vret;
             if(shadow_return) {
                 ret = general_null;
             }
@@ -179,7 +242,7 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
                     throw errors::MWSMessageException(err_msg,global::get_line());
                 }
                 else {
-                    args.push_back(GeneralTypeToken(lines[i].source[j+3]));
+                    args.push_back(GeneralTypeToken(lines[i].source[j+3],command->args[j]));
                 }
             }
 
@@ -219,7 +282,7 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
                     throw errors::MWSMessageException(err_msg,global::get_line());
                 }
                 else {
-                    args.push_back(GeneralTypeToken(lines[i].source[j+3]));
+                    args.push_back(GeneralTypeToken(lines[i].source[j+3],method->args[j]));
                 }
             }
 
@@ -267,7 +330,7 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
                     throw errors::MWSMessageException(err_msg,global::get_line());
                 }
                 else {
-                    args.push_back(GeneralTypeToken(lines[i].source[j+3]));
+                    args.push_back(GeneralTypeToken(lines[i].source[j+3],method->args[j]));
                 }
             }
 
@@ -287,10 +350,10 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
             }
 
             if(identf_line.size() < 3 || lines[i].source[1].content != ".") {
-                throw errors::MWSMessageException{"Invalid string-method call!\n\t- Expected: string.method <args>...",global::get_line()};
+                throw errors::MWSMessageException{"Invalid dictionary-method call!\n\t- Expected: object.method <args>...",global::get_line()};
             }
             auto idf_first = identf_line.front();
-            identf_line.erase(identf_line.begin()); // string
+            identf_line.erase(identf_line.begin()); // dictionary
             identf_line.erase(identf_line.begin()); // .
 
             Method<Dictionary>* method = get_dictionary_method(lines[i].source[2].content);
@@ -315,7 +378,7 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
                     throw errors::MWSMessageException(err_msg,global::get_line());
                 }
                 else {
-                    args.push_back(GeneralTypeToken(lines[i].source[j+3]));
+                    args.push_back(GeneralTypeToken(lines[i].source[j+3],method->args[j]));
                 }
             }
 
@@ -329,12 +392,127 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
                 get_variable(lines[i].source[0])->storage.dict = dic;
             }
         }
+        else if(identf_line.front() == General_type::STRUCT) {
+            for(size_t j = 1; j < lines[i].source.size(); ++j) {
+                identf_line.push_back(get_type(lines[i].source[j]));
+            }
+
+            if(lines[i].source.size() != 3 || get_type(lines[i].source[1]) != General_type::NAME ||
+                 get_type(lines[i].source[2],car_ArgumentList) != General_type::ARGUMENTLIST) {
+                throw errors::MWSMessageException{"Invalid pattern for a struct initialisation!\n\t- Pattern: <struct> <name> (<args>)",global::get_line()};
+            }
+            Token struct_name = lines[i].source[0];
+            Token instance_name = lines[i].source[1];
+
+            argument_list args = tools::parse_argument_list(lines[i].source[2]);
+            std::vector<Variable> call_args;
+            for(auto i : args)
+                call_args.push_back(i.to_variable());
+
+            int scope_idx = get_new_scope();
+            Object obj;
+            Object* struc = get_struct(struct_name);
+            obj.methods = struc->methods;
+            obj.members = struc->members;
+            obj.parent_scope = struc->parent_scope;
+            obj.structs = struc->structs;
+            obj.on_deconstruct = struc->on_deconstruct;
+
+            for(auto& i : obj.methods) {
+                for(auto& j : i.second) {
+                    int sscope = j.scope_idx;
+                    j.scope_idx = get_new_scope();
+                    scopes[j.scope_idx] = scopes[sscope];
+                    scopes[j.scope_idx].parent = obj.parent_scope;
+                    scopes[j.scope_idx].index = j.scope_idx;
+                }
+            }
+            set_variable(instance_name,obj);
+            if(has_method(obj,struct_name)) {
+                run_method(&obj,struct_name,call_args);
+            }
+            set_variable(instance_name,obj);
+        }
+        else if(identf_line.front() == General_type::OBJECT || (identf_line.front() == General_type::NAME && is_variable(lines[i].source[0]) && get_variable(lines[i].source[0])->type == Variable::Type::Object)) {
+            for(size_t j = 1; j < lines[i].source.size(); ++j) {
+                identf_line.push_back(get_type(lines[i].source[j]));
+            }
+
+            if(lines[i].source.size()-1 < 3 || lines[i].source[1].content != "." || lines[i].source[1].in_quotes) {
+                throw errors::MWSMessageException{"Invalid object-method call!\n\t- Expected: object.method <args>...",global::get_line()};
+            }
+            auto cpy = lines[i].source;
+            cpy.erase(cpy.begin()); // object
+            cpy.erase(cpy.begin()); // .
+
+            Object obj = *get_object(lines[i].source[0].content);
+            Token method_name = lines[i].source[2];
+
+            if(!has_method(obj,method_name)) {
+                throw errors::MWSMessageException{"Unknown object method: " + method_name.content,global::get_line()};
+            }
+
+            std::vector<Variable> args;
+            std::vector<GeneralTypeToken> arglist = tools::parse_argument_list(lines[i].source[3]);
+
+            for(auto i : arglist) {
+                args.push_back(tools::check4placeholder(i).to_variable());
+            }
+
+            Function* method = get_method(&obj,method_name,args);
+            if(method == nullptr) {
+                std::string err_msg = "No overload of method " + name + " matches agumentlist!\n- Got: [";
+                for(auto i : args) {
+                    err_msg += var_t2token(i.type).content + ",";
+                }
+                err_msg.pop_back();
+                throw errors::MWSMessageException{err_msg + "]",global::get_line()};
+            }
+
+            ret = run_method(&obj,method_name,args);
+            *get_object(lines[i].source[0].content) = obj;
+        }
+        else if(identf_line.front() == General_type::EXPRESSION) {
+            for(size_t j = 1; j < lines[i].source.size(); ++j) {
+                identf_line.push_back(get_type(lines[i].source[j]));
+            }
+            bool shadow_return = false;
+            if(identf_line.size() > 2) {
+                std::string err = "Invalid start of line!\n\t- Expected: [Command,Function,Module,String,List,Dictionary,Object,Struct]\n\t- But got: " + general_t2token(identf_line.front()).content + " (" + lines[i].source[0].content + ")\n"; 
+                throw errors::MWSMessageException{err,global::get_line()};
+            }
+            if(identf_line.size() == 2) {
+                if(identf_line[1] != General_type::OPERATOR) {
+                    std::string err = "Unexpected token after expression:\n\t- Expected: \"!\"\n\t- But got: " + general_t2token(identf_line[1]).content;
+                    throw errors::MWSMessageException{err,global::get_line()};
+                }
+                if(lines[i].source[1].content != "!") {
+                    std::string err = "Unexpected token after expression:\n\t- Expected: \"!\"\n\t- But got: " + lines[i].source[2].content;
+                    throw errors::MWSMessageException{err,global::get_line()};
+                }
+                shadow_return = true;
+            }
+            if(shadow_return) {
+                parse_expression(lines[i].source[0]);
+            }
+            else {
+                ret = parse_expression(lines[i].source[0]);
+            }
+        }
         else {
-            std::string err = "Invalid start of line!\n\t- Expected: [Command,Function,Module,String,List,Dictionary]\n\t- But got: " + general_t2token(identf_line.front()).content + " (" + lines[i].source[0].content + ")\n"; 
+            std::string err = "Invalid start of line!\n\t- Expected: [Command,Function,Module,String,List,Dictionary,Object,Struct]\n\t- But got: " + general_t2token(identf_line.front()).content + " (" + lines[i].source[0].content + ")\n"; 
             throw errors::MWSMessageException{err,global::get_line()};
         }
 
         global::pop_trace();
+
+        if(ret.type == General_type::OBJECT) {
+            Object* obj = get_object(ret.source);
+            if(obj != nullptr) {
+                ret.saveobj = *obj;
+                ret.use_save_obj = true;
+            }
+        }
 
         if(global::runner_should_return != 0) {
             if(!pass_return_down) {
