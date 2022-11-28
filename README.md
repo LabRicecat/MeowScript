@@ -34,13 +34,21 @@ $ meow-script --help
 ```
 
 ## How to use
-Get started **[here](https://github.com/SirWolfi/MeowScript/wiki)** to learn more about MeowScript!
+Get started with the official wiki to learn more about MeowScript!
+
+**[To the Wiki Pages!](https://github.com/SirWolfi/MeowScript/wiki)**
 
 ## Try it out
 You can try out MeowScript live by using the `--shell` option or make a `main.mws` and run it with
 ```
 $ meow-script main.mws
 ```
+
+## Questions?
+Visit the MeowScript forum to ask any questions you find along the way of using this project.  
+We are waiting for you!
+
+**[To the Discussion Page!](https://github.com/LabRicecat/MeowScript/discussions/categories/forum)**
 
 ## Credits
 Cute cat on the PC by DALL-E 2.0
