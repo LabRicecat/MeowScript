@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
     }
 #ifdef MEOWSCRIPT_DEBUG_MODE
     else if(arg == "--debug" || arg == "-d") {
-        return 0;
+
     }
 #endif
     else if(arg == "--version" || arg == "-v") {

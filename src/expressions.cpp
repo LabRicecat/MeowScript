@@ -16,7 +16,7 @@ Operator* MeowScript::get_operator(std::string name, General_type left, General_
     auto& ops = operators[name];
 
     for(auto& i : ops) {
-        if((i.req_left == left || i.req_left == General_type::UNKNOWN) && (i.req_right == right || i.req_right == General_type::UNKNOWN)) {
+        if((i.req_left == left || i.req_left == General_type::UNKNOWN || left == General_type::UNKNOWN) && (i.req_right == right || i.req_right == General_type::UNKNOWN || right == General_type::UNKNOWN)) {
             return &i;
         }
     }

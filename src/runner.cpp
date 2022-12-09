@@ -51,19 +51,19 @@ GeneralTypeToken MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool 
         std::string name = lines[i].source[0];
 
         std::string str_line;
-        for(auto i : lines[i].source) {
-            for(size_t j = 0; j < i.content.size(); ++j) {
-                if(i.content[j] == '\"') {
-                    i.content.insert(i.content.end() - 2 - j,'\\');
+        for(auto k : lines[i].source) {
+            for(size_t j = 0; j < k.content.size(); ++j) {
+                if(k.content[j] == '\"') {
+                    k.content.insert(k.content.begin() + j,'\\');
                     ++j;
                 }
             }
-            if(i.in_quotes) {
-                i = "\"" + i.content + "\"";
+            if(k.in_quotes) {
+                k = "\"" + k.content + "\"";
             }
-            str_line += " " + i.content;
+            str_line += " " + k.content;
         }
-
+        str_line = tools::remove_unneeded_chars(str_line);
         if(get_type(str_line,car_Expression) != General_type::EXPRESSION && is_expression("(" + str_line + ")")) {
             Variable result = parse_expression("(" + str_line + ")");
             ret = result;

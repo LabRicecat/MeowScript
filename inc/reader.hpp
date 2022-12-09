@@ -96,11 +96,13 @@ bool is_valid_parameterlist(Token context);
 bool is_brace_pair(char open,char close);
 bool is_event(std::string name);
 bool is_dictionary(Token context);
+bool is_literal_value(Token context);
 
 using lexed_tokens = std::vector<Line>;
 
 lexed_tokens lex(std::string file);
 lexed_tokens lex_text(std::string source);
+lexed_tokens lex_text_old(std::string source);
 
 bool brace_check(Token context, char open, char close);
 

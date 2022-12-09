@@ -226,7 +226,7 @@ Variable MeowScript::GeneralTypeToken::to_variable() const {
     try {
         return make_variable(source,general_t2var_t(type));
     }
-    catch(...) {
+    catch(errors::MWSMessageException& err) {
         std::string merr = "Can't cast GeneralType " + general_t2token(type).content + " (\"" + this->source.content + "\") to VariableType!";
         throw errors::MWSMessageException(merr,global::get_line());
     }

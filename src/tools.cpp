@@ -124,32 +124,18 @@ std::vector<Parameter> MeowScript::tools::parse_function_params(Token context) {
         }
     }
 
-    std::vector<Token> nline;
-    for(size_t i = 0; i < line.size(); ++i) {
-        nline.push_back("");
-        for(size_t j = 0; j < line[i].content.size(); ++j) {
-            if(line[i].content[j] == ',') {
-                nline.push_back(",");
-                nline.push_back("");
-            }
-            else {
-                nline.back().content += line[i].content[j];
-            }
-        }
-    }
-
     std::vector<std::vector<Token>> arguments;
-    if(nline.size() != 0)
+    if(line.size() != 0)
         arguments.push_back({});
-    for(size_t i = 0; i < nline.size(); ++i) {
-        if(nline[i].content == ",") {
+    for(size_t i = 0; i < line.size(); ++i) {
+        if(line[i].content == ",") {
             if(arguments.back().empty()) {
-                throw errors::MWSMessageException{"Invalid argument format!",global::get_line()};
+                throw errors::MWSMessageException{"Invalid parameter format!",global::get_line()};
             }
             arguments.push_back({});
         }
         else {
-            arguments.back().push_back(nline[i]);
+            arguments.back().push_back(line[i]);
         }
     }
 
@@ -162,17 +148,40 @@ std::vector<Parameter> MeowScript::tools::parse_function_params(Token context) {
         }
 
         if(i.size() == 1) {
-            if(!is_valid_name(i[0])) {
-                throw errors::MWSMessageException{"Enexpected token: " + i[0].content,global::get_line()};
+            if(!is_valid_name(i[0]) && !is_literal_value(i[0])) {
+                throw errors::MWSMessageException{"Unexpected token: " + i[0].content,global::get_line()};
             }
-            ret.push_back(Parameter(Variable::Type::UNKNOWN,i[0]));
+            Parameter p = Parameter(Variable::Type::UNKNOWN,i[0]);
+            if(is_literal_value(i[0])) {
+                p.literal_value = make_variable(i[0]);
+                p.name = "";
+            }
+            ret.push_back(p);
+        }
+        else if(i.size() == 2) {
+            if(!is_valid_name(i[0]) && !is_literal_value(i[0])) {
+                throw errors::MWSMessageException{"Unexpected token: " + i[0].content,global::get_line()};
+            }
+            if(!is_ruleset(i[1])) {
+                throw errors::MWSMessageException{"Unexpected token: " + i[1].content,global::get_line()};
+            }
+            Parameter p = Parameter(Variable::Type::UNKNOWN,i[0]);
+            if(is_literal_value(i[0])) {
+                p.literal_value = make_variable(i[0]);
+                p.name = "";
+            }
+
+            RuleSet ruleset = construct_ruleset(i[1]);
+            p.ruleset = ruleset;
+
+            ret.push_back(p);
         }
         else if(i.size() == 3) {
-            if(!is_valid_name(i[0])) {
-                throw errors::MWSMessageException{"Enexpected token: " + i[0].content,global::get_line()};
+            if(!is_valid_name(i[0]) && !is_literal_value(i[0])) {
+                throw errors::MWSMessageException{"Unexpected token: " + i[0].content,global::get_line()};
             }
             if(i[1].content != "::" && i[1].content != ":") {
-                throw errors::MWSMessageException{"Invalid argument format!",global::get_line()};
+                throw errors::MWSMessageException{"Invalid parameter format!",global::get_line()};
             }
             if(!is_struct(i[2]) && !is_valid_var_t(i[2])) {
                 throw errors::MWSMessageException{i[2].content + " is not a known VariableType or struct!",global::get_line()};
@@ -181,11 +190,49 @@ std::vector<Parameter> MeowScript::tools::parse_function_params(Token context) {
                 ret.push_back(Parameter(Variable::Type::Object,i[0],i[2]));
             }
             else {
-                ret.push_back(Parameter(token2var_t(i[2]),i[0]));
+                Parameter p = Parameter(token2var_t(i[2]),i[0]);
+                if(is_literal_value(i[0])) {
+                    p.literal_value = make_variable(i[0]);
+                    p.name = "";
+                }
+                ret.push_back(p);
+            }
+        }
+        else if(i.size() == 4) {
+            if(!is_valid_name(i[0]) && !is_literal_value(i[0])) {
+                throw errors::MWSMessageException{"Unexpected token: " + i[0].content,global::get_line()};
+            }
+            if(!is_ruleset(i[1])) {
+                throw errors::MWSMessageException{"Unexpected token: " + i[1].content,global::get_line()};
+            }
+            if(i[2].content != "::" && i[2].content != ":") {
+                throw errors::MWSMessageException{"Invalid parameter format!",global::get_line()};
+            }
+            if(!is_struct(i[3]) && !is_valid_var_t(i[3])) {
+                throw errors::MWSMessageException{i[3].content + " is not a known VariableType or struct!",global::get_line()};
+            }
+            Parameter p;
+            RuleSet ruleset = construct_ruleset(i[1]);
+            p.ruleset = ruleset;
+
+            if(is_struct(i[2])) {
+                p.type = Variable::Type::Object;
+                p.name = i[0];
+                p.struct_name = i[3];
+                ret.push_back(p);
+            }
+            else {
+                p.type = token2var_t(i[3]);
+                p.name = i[0];
+                if(is_literal_value(i[0])) {
+                    p.literal_value = make_variable(i[0]);
+                    p.name = "";
+                }
+                ret.push_back(p);
             }
         }
         else {
-            throw errors::MWSMessageException{"Invalid argument format!",global::get_line()};
+            throw errors::MWSMessageException{"Invalid parameter format!",global::get_line()};
         }
     }
     return ret;

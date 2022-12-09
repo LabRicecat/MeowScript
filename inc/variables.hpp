@@ -81,7 +81,13 @@ public:
     bool set(Variable var);
 
     bool operator==(Variable v) {
+        if(this->type == Variable::Type::Object && v.type == Variable::Type::Object) {
+            return struct_matches(&storage.obj,&v.storage.obj);
+        }
         return this->type == v.type && this->to_string() == v.to_string();
+    }
+    bool operator!=(Variable v) {
+        return !operator==(v);
     }
 };
 

@@ -21,6 +21,12 @@ struct Operator {
     int priority = 0;
     
     Variable (*parse)(GeneralTypeToken left, GeneralTypeToken right);
+
+    bool operator==(Operator op) {
+        return req_left == op.req_left &&
+                req_right == op.req_right &&
+                priority == priority;
+    }
 };
 
 bool is_operator(std::string name);

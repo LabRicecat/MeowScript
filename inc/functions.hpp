@@ -11,10 +11,25 @@
 
 MEOWSCRIPT_HEADER_BEGIN
 
+struct Operator;
+struct ArgRule {
+    Operator* operat;
+    Variable value;
+    std::string op_name = "";
+
+    bool applies(Variable var) const;
+
+    bool operator==(ArgRule r);
+};
+
+using RuleSet = std::vector<ArgRule>;
+
 struct Parameter {
     Variable::Type type = Variable::Type::ANY;
     std::string name;
     std::string struct_name;
+    Variable literal_value = Variable(Variable::Type::VOID);
+    RuleSet ruleset;
 
     Parameter() {}
     Parameter(Variable::Type type) : type(type) {}
@@ -24,6 +39,8 @@ struct Parameter {
         this->type = type;
     }
 
+    bool needs_literal_value() const;
+
     bool matches(Variable var) const;
     bool matches(Parameter param) const;
 
@@ -32,9 +49,16 @@ struct Parameter {
         this->name = p.name;
         this->struct_name = p.struct_name;
     }
+
+    static Variable literal_null;
 };
 
 bool paramlist_matches(std::vector<Parameter> params1,std::vector<Parameter> params2);
+bool ruleset_matches(RuleSet ruleset, Variable value);
+bool same_ruleset(RuleSet ra, RuleSet rb);
+
+bool is_ruleset(Token token);
+RuleSet construct_ruleset(Token token);
 
 class Function {
 public:
