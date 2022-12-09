@@ -5,4 +5,3 @@ bin
 meow-script
 stdlib/threading.cpp
 testing/
-examples/big_project
