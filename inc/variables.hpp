@@ -7,7 +7,6 @@
 #include "commands.hpp"
 #include "tools.hpp"
 #include "objects.hpp"
-
 #include <unordered_map>
 
 MEOWSCRIPT_HEADER_BEGIN
@@ -19,24 +18,25 @@ struct GeneralTypeToken;
 struct Dictionary {
 private:
     std::vector<GeneralTypeToken> i_keys;
-    std::vector<GeneralTypeToken> i_values;
+    std::vector<Variable> i_values;
 public:
     const std::vector<std::pair<GeneralTypeToken,GeneralTypeToken>> pairs() const;
     std::vector<std::pair<GeneralTypeToken,GeneralTypeToken>> pairs();
 
     const std::vector<GeneralTypeToken>& keys() const;
-    const std::vector<GeneralTypeToken>& values() const;
+    const std::vector<Variable>& values() const;
     std::vector<GeneralTypeToken>& keys();
-    std::vector<GeneralTypeToken>& values();
+    std::vector<Variable>& values();
 
     bool has(const GeneralTypeToken gtt) const;
 
-    GeneralTypeToken& operator[](GeneralTypeToken gtt);
+    Variable& operator[](GeneralTypeToken gtt);
 };
 
 Dictionary dic_from_token(Token tk);
 Token dic_to_token(Dictionary dic);
 
+struct Function;
 struct Variable {
 private:
     struct stor_ {
@@ -45,6 +45,7 @@ private:
         List list;
         Dictionary dict;
         Object obj;
+        std::vector<Function> func;
     };
 public:
     enum class Type {
@@ -53,6 +54,7 @@ public:
         List,
         Dictionary,
         Object,
+        Function,
         UNKNOWN, // Dont use
         ANY, // Also don't use
         VOID, // Guess what
@@ -64,9 +66,12 @@ public:
     Variable(List list) {type = Type::List; storage.list = list;}
     Variable(Token string) {type = Type::String; storage.string = string; storage.string.in_quotes = true;}
     Variable(long double number) {type = Type::Number; storage.number = number;}
-    Variable(Dictionary dic) {type = Variable::Type::Dictionary, storage.dict = dic;}
-    Variable(Object obj) {type = Variable::Type::Object, storage.obj = obj;}
+    Variable(Dictionary dic) {type = Variable::Type::Dictionary; storage.dict = dic;}
+    Variable(Object obj) {type = Variable::Type::Object; storage.obj = obj;}
     Variable(Type ty) : type(ty) {}
+    Variable(Function func);
+    explicit Variable(std::string str) {type = Variable::Type::String; storage.string = str; storage.string.in_quotes = true;}
+    explicit Variable(const char* str) {type = Variable::Type::String; storage.string = std::string(str); storage.string.in_quotes = true;}
     Variable() {}
 
     std::string to_string() const;
@@ -147,6 +152,10 @@ struct GeneralTypeToken {
                 use_save_obj = true;
                 saveobj = var.storage.obj;
                 break;
+            case Variable::Type::Function:
+                source = var.to_string();
+                type = General_type::FUNCTION;
+                break;
             default:
                 type = General_type::VOID;
         }
@@ -211,7 +220,7 @@ struct GeneralTypeToken {
     }
 
     bool use_save_obj = false;
-
+    bool nameless_function = false;
     Object saveobj;
 };
 
@@ -231,7 +240,7 @@ namespace tools {
     Token check4replace(Token token);
 }
 
-inline const GeneralTypeToken general_null = GeneralTypeToken{};
+inline const Variable general_null = Variable{};
 
 // Conversion functions
 Variable::Type general_t2var_t(General_type type);

@@ -76,13 +76,13 @@ std::vector<std::pair<GeneralTypeToken,GeneralTypeToken>> Dictionary::pairs() {
 const std::vector<GeneralTypeToken>& Dictionary::keys() const {
     return i_keys;
 }
-const std::vector<GeneralTypeToken>& Dictionary::values() const {
+const std::vector<Variable>& Dictionary::values() const {
     return i_values;
 }
 std::vector<GeneralTypeToken>& Dictionary::keys() {
     return i_keys;
 }
-std::vector<GeneralTypeToken>& Dictionary::values() {
+std::vector<Variable>& Dictionary::values() {
     return i_values;
 }
 
@@ -95,7 +95,7 @@ bool Dictionary::has(const GeneralTypeToken gtt) const {
     return false;
 }
 
-GeneralTypeToken& Dictionary::operator[](GeneralTypeToken gtt) {
+Variable& Dictionary::operator[](GeneralTypeToken gtt) {
     for(size_t i = 0; i < keys().size(); ++i) {
         if(keys()[i] == gtt) {
             return values()[i];
@@ -183,11 +183,19 @@ std::vector<Parameter> MeowScript::tools::parse_function_params(Token context) {
             if(i[1].content != "::" && i[1].content != ":") {
                 throw errors::MWSMessageException{"Invalid parameter format!",global::get_line()};
             }
-            if(!is_struct(i[2]) && !is_valid_var_t(i[2])) {
+            if(!is_valid_function_return(i[2])) {
                 throw errors::MWSMessageException{i[2].content + " is not a known VariableType or struct!",global::get_line()};
             }
             if(is_struct(i[2])) {
                 ret.push_back(Parameter(Variable::Type::Object,i[0],i[2]));
+            }
+            else if(is_funcparam_literal(i[2])) {
+                auto a = funcparam_from_literal(i[2]);
+                Parameter p;
+                p.name = i[0];
+                p.type = Variable::Type::Function;
+                p.set_functiontemplate(a);
+                ret.push_back(p);
             }
             else {
                 Parameter p = Parameter(token2var_t(i[2]),i[0]);
@@ -208,17 +216,25 @@ std::vector<Parameter> MeowScript::tools::parse_function_params(Token context) {
             if(i[2].content != "::" && i[2].content != ":") {
                 throw errors::MWSMessageException{"Invalid parameter format!",global::get_line()};
             }
-            if(!is_struct(i[3]) && !is_valid_var_t(i[3])) {
+            if(!is_valid_function_return(i[3])) {
                 throw errors::MWSMessageException{i[3].content + " is not a known VariableType or struct!",global::get_line()};
             }
             Parameter p;
             RuleSet ruleset = construct_ruleset(i[1]);
             p.ruleset = ruleset;
 
-            if(is_struct(i[2])) {
+            if(is_struct(i[3])) {
                 p.type = Variable::Type::Object;
                 p.name = i[0];
                 p.struct_name = i[3];
+                ret.push_back(p);
+            }
+            else if(is_funcparam_literal(i[3])) {
+                auto a = funcparam_from_literal(i[3]);
+                Parameter p;
+                p.name = i[0];
+                p.type = Variable::Type::Function;
+                p.set_functiontemplate(a);
                 ret.push_back(p);
             }
             else {

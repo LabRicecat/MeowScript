@@ -1,6 +1,7 @@
 #include "../inc/reader.hpp"
 #include "../inc/expressions.hpp"
 #include "../inc/global.hpp"
+#include "../inc/kittenlexer.hpp"
 
 MEOWSCRIPT_SOURCE_FILE
 
@@ -164,6 +165,7 @@ bool MeowScript::is_valid_var_t(Token context) {
         "List",
         "Dictionary",
         "Object",
+        "Function",
         "Any",
         "Void",
     };
@@ -446,6 +448,10 @@ bool MeowScript::is_literal_value(Token context) {
     ).matches(get_type(context));
 }
 
+bool MeowScript::is_valid_function_return(Token context) {
+    return is_valid_var_t(context) || is_struct(context) || is_funcparam_literal(context);
+}
+
 bool MeowScript::brace_check(Token context, char open, char close) {
     if(context.in_quotes) {
         return false;
@@ -491,7 +497,6 @@ bool MeowScript::brace_check(Token context, char open, char close) {
     }
     return brace_counter == 0;
 }
-#include "../external/kittenlexer.hpp"
 
 std::vector<Line> MeowScript::lex_text_old(std::string source) {
     std::vector<Line> ret;
@@ -713,6 +718,7 @@ std::vector<Line> MeowScript::lex_text(std::string source) {
     ;
     auto lexed = lexer.lex(source);
     if(!lexer) {
+        std::cout << source << std::endl;
         throw 12;
     }
     ret.push_back(Line{{},1});

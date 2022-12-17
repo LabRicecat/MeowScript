@@ -11,7 +11,7 @@ public:
                 {
                     car_String | car_PlaceHolderAble
                 },
-                [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+                [](std::vector<GeneralTypeToken> args)->Variable {
                     auto fname = tools::check4placeholder(args[0]);
                     if(fname.type != General_type::STRING) {
                         throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: String\n\t- But got: " + general_t2token(fname.type).content,global::get_line()};
@@ -22,10 +22,10 @@ public:
                     }
                     std::string content = read(file);
 
-                    GeneralTypeToken ret;
-                    ret.type = General_type::STRING;
-                    ret.source.content = content;
-                    ret.source.in_quotes = true;
+                    Variable ret;
+                    ret.type = Variable::Type::String;
+                    ret.storage.string = content;
+                    ret.storage.string.in_quotes = true;
                     return ret;
                 }
             }
@@ -35,7 +35,7 @@ public:
                     car_String | car_PlaceHolderAble,
                     car_Number | car_PlaceHolderAble
                 },
-                [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+                [](std::vector<GeneralTypeToken> args)->Variable {
                     auto fname = tools::check4placeholder(args[0]);
                     if(fname.type != General_type::STRING) {
                         throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: String\n\t- But got: " + general_t2token(fname.type).content,global::get_line()};
@@ -71,7 +71,10 @@ public:
                     if(line_num > lines.size()) {
                         throw errors::MWSMessageException{"File does not have line: " + std::to_string(line_num),global::get_line()};
                     }
-                    return lines[line_num-1];
+                    Token tk;
+                    tk.in_quotes = true;
+                    tk.content = lines[line_num-1];
+                    return tk;
                 }
             }
         ).add_command(
@@ -79,7 +82,7 @@ public:
                 {
                     car_String | car_PlaceHolderAble
                 },
-                [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+                [](std::vector<GeneralTypeToken> args)->Variable {
                     auto fname = tools::check4placeholder(args[0]);
                     if(fname.type != General_type::STRING) {
                         throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: String\n\t- But got: " + general_t2token(fname.type).content,global::get_line()};
@@ -96,7 +99,7 @@ public:
                 {
                     car_String | car_PlaceHolderAble
                 },
-                [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+                [](std::vector<GeneralTypeToken> args)->Variable {
                     auto fname = tools::check4placeholder(args[0]);
                     if(fname.type != General_type::STRING) {
                         throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: String\n\t- But got: " + general_t2token(fname.type).content,global::get_line()};
@@ -114,17 +117,17 @@ public:
                 {
                     car_String | car_PlaceHolderAble
                 },
-                [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+                [](std::vector<GeneralTypeToken> args)->Variable {
                     auto fname = tools::check4placeholder(args[0]);
                     if(fname.type != General_type::STRING) {
                         throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: String\n\t- But got: " + general_t2token(fname.type).content,global::get_line()};
                     }
                     std::string file = global::include_parent_path().string() + fname.source.content;
 
-                    GeneralTypeToken ret;
-                    ret.type = General_type::STRING;
-                    ret.source.content = fs::path(file).extension().string();
-                    ret.source.in_quotes = true;
+                    Variable ret;
+                    ret.type = Variable::Type::String;
+                    ret.storage.string.content = fs::path(file).extension().string();
+                    ret.storage.string.in_quotes = true;
                     return ret;
                 }
             }
@@ -133,17 +136,17 @@ public:
                 {
                     car_String | car_PlaceHolderAble
                 },
-                [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+                [](std::vector<GeneralTypeToken> args)->Variable {
                     auto fname = tools::check4placeholder(args[0]);
                     if(fname.type != General_type::STRING) {
                         throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: String\n\t- But got: " + general_t2token(fname.type).content,global::get_line()};
                     }
                     std::string file = global::include_parent_path().string() + fname.source.content;
 
-                    GeneralTypeToken ret;
-                    ret.type = General_type::STRING;
-                    ret.source.content = fs::path(file).filename().string();
-                    ret.source.in_quotes = true;
+                    Variable ret;
+                    ret.type = Variable::Type::String;
+                    ret.storage.string.content = fs::path(file).filename().string();
+                    ret.storage.string.in_quotes = true;
                     return ret;
                 }
             }
@@ -153,7 +156,7 @@ public:
                     car_String | car_PlaceHolderAble,
                     car_String | car_Number | car_List | car_PlaceHolderAble,
                 },
-                [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+                [](std::vector<GeneralTypeToken> args)->Variable {
                     auto fname = tools::check4placeholder(args[0]);
                     if(fname.type != General_type::STRING) {
                         throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: String\n\t- But got: " + general_t2token(fname.type).content,global::get_line()};
@@ -182,7 +185,7 @@ public:
                     car_String | car_PlaceHolderAble,
                     car_String | car_Number | car_List | car_PlaceHolderAble,
                 },
-                [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+                [](std::vector<GeneralTypeToken> args)->Variable {
                     auto fname = tools::check4placeholder(args[0]);
                     if(fname.type != General_type::STRING) {
                         throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: String\n\t- But got: " + general_t2token(fname.type).content,global::get_line()};
@@ -208,7 +211,7 @@ public:
                 {
                     car_String | car_PlaceHolderAble,
                 },
-                [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+                [](std::vector<GeneralTypeToken> args)->Variable {
                     auto fname = tools::check4placeholder(args[0]);
                     if(fname.type != General_type::STRING) {
                         throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: String\n\t- But got: " + general_t2token(fname.type).content,global::get_line()};

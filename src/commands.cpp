@@ -88,9 +88,9 @@ static std::vector<Command> commandlist = {
     {"new",
         {
             car_Name,
-            car_Number | car_String | car_List | car_Dictionary | car_PlaceHolderAble,
+            car_Number | car_String | car_List | car_Dictionary | car_PlaceHolderAble | car_Function,
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_CAN_BE_IN_STRUCT()
         new_variable(args[0].source.content,tools::check4placeholder(args[1]).to_variable());
         return general_null;
@@ -99,7 +99,7 @@ static std::vector<Command> commandlist = {
         {
             car_Name,
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_CAN_BE_IN_STRUCT()
         new_variable(args[0].source.content,0);
         return general_null;
@@ -109,7 +109,7 @@ static std::vector<Command> commandlist = {
             car_Name,
             car_Number | car_String | car_List | car_Dictionary | car_PlaceHolderAble,
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_CAN_BE_IN_STRUCT()
         Variable v = tools::check4placeholder(args[1]).to_variable();
         v.constant = true;
@@ -119,9 +119,9 @@ static std::vector<Command> commandlist = {
     {"set",
         {
             car_Name,
-            car_Number | car_String | car_List | car_Dictionary | car_PlaceHolderAble,
+            car_Number | car_String | car_List | car_Dictionary | car_PlaceHolderAble | car_Function,
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_MUST_NOT_BE_IN_STRUCT()
         set_variable(args[0].source.content,tools::check4placeholder(args[1]).to_variable());
         return general_null;
@@ -130,29 +130,29 @@ static std::vector<Command> commandlist = {
         {
             car_Name
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_MUST_NOT_BE_IN_STRUCT()
         Variable* var = get_variable(args[0].source.content);
         if(var == nullptr) {
             throw errors::MWSMessageException{"Unknwon variable: " + args[0].source.content,global::get_line()};
         }
-        return GeneralTypeToken(*var);
+        return *var;
     }},
     {"return",
         {
             car_Any
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_MUST_NOT_BE_IN_STRUCT()
         auto ret = tools::check4placeholder(args[0]);
         ++global::runner_should_return;
-        return ret;
+        return ret.to_variable();
     }},
     {"return",
         {
             
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_MUST_NOT_BE_IN_STRUCT()
         ++global::runner_should_return;
         return general_null;
@@ -165,7 +165,7 @@ static std::vector<Command> commandlist = {
             car_Name | car_Struct, // ReturnValue
             car_Compound,
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_CAN_BE_IN_STRUCT()
         Function fun;
         std::string ret_ty = args[3].to_string();
@@ -173,7 +173,7 @@ static std::vector<Command> commandlist = {
         if(args[2].to_string() != "->") {
             throw errors::MWSMessageException{"Expected \"->\" to declarate a return value, but got: " + args[2].to_string(),global::get_line()};
         }
-        if(!is_struct(ret_ty) && !is_valid_var_t(ret_ty) && ret_ty != "Any" && ret_ty != "Void") {
+        if(!is_valid_function_return(ret_ty) && ret_ty != "Any" && ret_ty != "Void") {
             throw errors::MWSMessageException{ret_ty + " is not a valid return type!",global::get_line()};
         }
 
@@ -190,6 +190,10 @@ static std::vector<Command> commandlist = {
         else if(ret_ty == "Object") {
             fun.return_type.type = Variable::Type::Object;
             fun.return_type.struct_name = "";
+        }
+        else if(is_funcparam_literal(ret_ty)) {
+            fun.return_type.set_functiontemplate(funcparam_from_literal(ret_ty));
+            fun.return_type.type = Variable::Type::Function; 
         }
         else {
             fun.return_type = token2var_t(args[3].to_string());
@@ -214,7 +218,7 @@ static std::vector<Command> commandlist = {
             car_ParameterList, 
             car_Compound | car_Expression | car_Name | car_String | car_Number
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_CAN_BE_IN_STRUCT()
         Command* real_func = get_command("func");
         GeneralTypeToken any;
@@ -241,7 +245,7 @@ static std::vector<Command> commandlist = {
             car_Operator, // =>
             car_Compound | car_Expression | car_Name | car_String | car_Number | car_Ongoing
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_CAN_BE_IN_STRUCT()
         Command* real_func = get_command("func");
 
@@ -287,7 +291,7 @@ static std::vector<Command> commandlist = {
         {
             car_String | car_Number | car_List | car_Expression | car_PlaceHolderAble
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_MUST_NOT_BE_IN_STRUCT()
         GeneralTypeToken gtt = tools::check4placeholder(args[0]);
         if(gtt.type == General_type::STRING) {
@@ -305,7 +309,7 @@ static std::vector<Command> commandlist = {
         {
             car_Ongoing
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_MUST_NOT_BE_IN_STRUCT()
         std::string newline = "\n";
 
@@ -368,7 +372,7 @@ static std::vector<Command> commandlist = {
             car_Expression,
             car_Compound,
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_MUST_NOT_BE_IN_STRUCT()
         auto res = parse_expression("(" + args[0].to_string() + ")");
         if(res.type != Variable::Type::Number) {
@@ -392,7 +396,7 @@ static std::vector<Command> commandlist = {
             car_Expression,
             car_Compound,
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_MUST_NOT_BE_IN_STRUCT()
         auto res = parse_expression(args[0].to_string());
         if(res.type != Variable::Type::Number) {
@@ -405,7 +409,7 @@ static std::vector<Command> commandlist = {
         if(res.storage.number == 1 && !current_scope()->last_if_result) {
             auto ret = run_text(args[1].source.content,false,false);
             current_scope()->last_if_result = true;
-            if(ret.type != General_type::VOID && ret.type != General_type::UNKNOWN) {
+            if(ret.type != Variable::Type::VOID && ret.type != Variable::Type::UNKNOWN) {
                 ++global::runner_should_return;
                 current_scope()->last_if_result = (res.storage.number == 1);
                 return ret;
@@ -417,7 +421,7 @@ static std::vector<Command> commandlist = {
         {
             car_Compound,
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_MUST_NOT_BE_IN_STRUCT()
         args[0].source.content.erase(args[0].source.content.begin());
         args[0].source.content.erase(args[0].source.content.begin()+args[0].source.content.size()-1);
@@ -436,7 +440,7 @@ static std::vector<Command> commandlist = {
         {
             car_Name | car_Module
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_MUST_NOT_BE_IN_STRUCT()
         if(args[0].type == General_type::MODULE && is_loaded_module(args[0].to_string())) {
             get_module(args[0].to_string())->enabled = true;
@@ -456,7 +460,7 @@ static std::vector<Command> commandlist = {
             car_Number | car_String | car_List | car_Dictionary | car_PlaceHolderAble,
             car_Compound
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_MUST_NOT_BE_IN_STRUCT()
         if(args[1].to_string() != "in") {
             throw errors::MWSMessageException{"Expected \"in\" for loop but got: " + args[1].to_string(),global::get_line()};
@@ -528,7 +532,7 @@ static std::vector<Command> commandlist = {
             car_Expression,
             car_Compound
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_MUST_NOT_BE_IN_STRUCT()
         GeneralTypeToken gtt = args[0];
         std::string comp = args[1].to_string();
@@ -557,14 +561,14 @@ static std::vector<Command> commandlist = {
     }},
     {"break",
         {},
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_MUST_NOT_BE_IN_STRUCT()
         ++global::break_loop;
         return general_null;
     }},
     {"continue",
         {},
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_MUST_NOT_BE_IN_STRUCT()
         ++global::continue_loop;
         return general_null;
@@ -573,19 +577,19 @@ static std::vector<Command> commandlist = {
         {
             car_Any,
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_MUST_NOT_BE_IN_STRUCT()
         GeneralTypeToken gtt;
         gtt.source = general_t2token(tools::check4placeholder(args[0]).type).content;
         gtt.source.in_quotes = true;
         gtt.type = General_type::STRING;
-        return gtt;
+        return gtt.to_variable();
     }},
     {"input",
         {
             car_ArgumentList
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_MUST_NOT_BE_IN_STRUCT()
         auto alist = tools::parse_argument_list(args[0]);
         if(alist.size() > 1) {
@@ -606,14 +610,14 @@ static std::vector<Command> commandlist = {
         gtt.source = inp;
         gtt.source.in_quotes = true;
         gtt.type = General_type::STRING;
-        return gtt;
+        return gtt.to_variable();
     }},
         // casts
     {"string",
         {
             car_ArgumentList
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_MUST_NOT_BE_IN_STRUCT()
         auto alist = tools::parse_argument_list(args[0]);
         if(alist.size() != 1) {
@@ -622,16 +626,16 @@ static std::vector<Command> commandlist = {
         alist[0] = tools::check4placeholder(alist[0]);
         switch(alist[0].type) {
             case General_type::STRING:
-                return alist[0];
+                return alist[0].to_variable();
             case General_type::NUMBER:
-                return GeneralTypeToken(tools::remove_uness_decs(std::to_string(alist[0].to_variable().storage.number),false).content);
+                return Variable(tools::remove_uness_decs(std::to_string(alist[0].to_variable().storage.number),false).content);
             case General_type::LIST:
                 {
                     GeneralTypeToken ret;
                     ret.type = General_type::STRING;
                     ret.source = alist[0].to_variable().storage.list.to_string();
                     ret.source.in_quotes = true;
-                    return ret;
+                    return ret.to_variable();
                 }
             default:
                 throw errors::MWSMessageException{"Invalid argument for case: string()\n\t- Expected: [String,Number,List]\n\t- But got: " + general_t2token(alist[0].type).content,global::get_line()};
@@ -642,7 +646,7 @@ static std::vector<Command> commandlist = {
         {
             car_ArgumentList
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_MUST_NOT_BE_IN_STRUCT()
         auto alist = tools::parse_argument_list(args[0]);
         if(alist.size() != 1) {
@@ -661,7 +665,7 @@ static std::vector<Command> commandlist = {
                     return general_null;
                 }
             case General_type::NUMBER:
-                return alist[0];
+                return alist[0].to_variable();
             default:
                 return general_null;
         }
@@ -671,7 +675,7 @@ static std::vector<Command> commandlist = {
         {
             car_ArgumentList
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_MUST_NOT_BE_IN_STRUCT()
         auto alist = tools::parse_argument_list(args[0]);
         if(alist.size() != 1) {
@@ -709,7 +713,7 @@ static std::vector<Command> commandlist = {
         {
             car_ArgumentList
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_MUST_NOT_BE_IN_STRUCT()
         auto alist = tools::parse_argument_list(args[0]);
         if(alist.size() != 1) {
@@ -733,7 +737,7 @@ static std::vector<Command> commandlist = {
         {
             car_String,
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_MUST_NOT_BE_IN_STRUCT()
         fs::path pth = global::include_path.top();
         pth = pth.remove_filename().string() + args[0].source.content;
@@ -760,7 +764,7 @@ static std::vector<Command> commandlist = {
             car_Name,
             car_ArgumentList
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_MUST_NOT_BE_IN_STRUCT()
         if(is_event(args[1].source.content)) {
             throw errors::MWSMessageException{"Can't define event: \"" + args[1].source.content + "\"",global::get_line()};
@@ -794,7 +798,7 @@ static std::vector<Command> commandlist = {
             car_Event,
             car_ArgumentList
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_MUST_NOT_BE_IN_STRUCT()
         if(!is_event(args[0].source.content)) {
             throw errors::MWSMessageException{"No such event to occur: \"" + args[0].source.content + "\"",global::get_line()};
@@ -848,7 +852,7 @@ static std::vector<Command> commandlist = {
             car_ArgumentList,
             car_Compound
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_MUST_NOT_BE_IN_STRUCT()
         if(!is_event(args[0].source.content)) {
             throw errors::MWSMessageException{"No such event to listen to: \"" + args[0].source.content + "\"",global::get_line()};
@@ -867,9 +871,8 @@ static std::vector<Command> commandlist = {
         fun.body = lex_text(r);
         fun.return_type = Variable::Type::VOID;
         fun.file = global::include_path.top();
-        fun.scope_idx = get_new_scope();
         fun.params = tools::parse_function_params(args[1].source);
-        scopes[fun.scope_idx].parent = current_scope()->index;
+        fun.parent = current_scope()->index;
 
         global::events[args[0].source.content].listeners.push_back(fun);
         return general_null;
@@ -880,7 +883,7 @@ static std::vector<Command> commandlist = {
             car_Name,
             car_Compound,
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_CAN_BE_IN_STRUCT()
         args[1].source.content.erase(args[1].source.content.begin());
         args[1].source.content.erase(args[1].source.content.begin()+args[1].source.content.size()-1);
@@ -897,7 +900,7 @@ static std::vector<Command> commandlist = {
             car_ArgumentList,
             car_Compound,
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_CAN_BE_IN_STRUCT()
         args[2].source.content.erase(args[2].source.content.begin());
         args[2].source.content.erase(args[2].source.content.begin()+args[2].source.content.size()-1);
@@ -930,7 +933,7 @@ static std::vector<Command> commandlist = {
         {
             car_Name,
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_MUST_BE_IN_STRUCT()
         Variable* var = get_variable(args[0].source.content);
         Function f = generate_get(args[0].source.content,*var);
@@ -947,7 +950,7 @@ static std::vector<Command> commandlist = {
         {
             car_Name,
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_MUST_BE_IN_STRUCT()
         Variable* var = get_variable(args[0].source.content);
         Function f = generate_get(args[0].source.content,*var);
@@ -960,7 +963,7 @@ static std::vector<Command> commandlist = {
         {
             car_Name,
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_MUST_BE_IN_STRUCT()
         Variable* var = get_variable(args[0].source.content);
         Function f = generate_set(args[0].source.content,*var);
@@ -974,7 +977,7 @@ static std::vector<Command> commandlist = {
             car_Function,
             car_ArgumentList,
         },
-    [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+    [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_MUST_BE_IN_STRUCT()
         Object current = current_scope()->current_obj.top();
         argument_list alist = tools::parse_argument_list(args[1]);

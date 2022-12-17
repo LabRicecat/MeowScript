@@ -62,9 +62,11 @@ bool func_param_match(Function fun,std::vector<Variable> params);
 bool func_param_match(Function fun,std::vector<Parameter> params);
 Function* get_function(std::string name, std::vector<Variable> params);
 Function* get_function(std::string name, std::vector<Parameter> params);
+
+std::vector<Function> get_function_overloads(std::string name);
+
 // returns false if it fails
 // does not override existing functions in scope
-
 bool add_function(std::string name, Function fun);
 void add_object(std::string name, Object obj);
 bool add_struct(std::string name, Object struc);

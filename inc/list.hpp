@@ -42,7 +42,7 @@ struct Method {
     std::string name;
     std::vector<MethodArgReqirement> args;
 
-    GeneralTypeToken (*run)(std::vector<GeneralTypeToken> args, Self* self);
+    Variable (*run)(std::vector<GeneralTypeToken> args, Self* self);
 };
 
 std::vector<Method<List>>* get_list_method_list();

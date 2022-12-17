@@ -253,6 +253,9 @@ inline std::unordered_map<std::string,std::vector<Operator>> operators = {
                             case General_type::NAME:
                                 s = tools::check4var(right).to_variable();
                                 break;
+                            case General_type::FUNCTION:
+                                s = right.to_variable();
+                                break;
                             case General_type::COMPOUND:
                                 try {
                                     gtt = tools::check4compound(right);

@@ -12,7 +12,7 @@ public:
             {
                 car_ArgumentList
             },
-            [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+            [](std::vector<GeneralTypeToken> args)->Variable {
                 argument_list alist = tools::parse_argument_list(args[0]);
                 if(alist.size() != 2) {
                     throw errors::MWSMessageException{"Too many/few arguments for command: max\n\t- Expected: 2\n\t- But got: " + std::to_string(alist.size()) ,global::get_line()};
@@ -34,7 +34,7 @@ public:
             {
                 car_ArgumentList
             },
-            [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+            [](std::vector<GeneralTypeToken> args)->Variable {
                 argument_list alist = tools::parse_argument_list(args[0]);
                 if(alist.size() != 2) {
                     throw errors::MWSMessageException{"Too many/few arguments for command: max\n\t- Expected: 2\n\t- But got: " + std::to_string(alist.size()) ,global::get_line()};
@@ -56,7 +56,7 @@ public:
             {
                 car_Number | car_PlaceHolderAble
             },
-            [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+            [](std::vector<GeneralTypeToken> args)->Variable {
                 auto v = tools::check4placeholder(args[0]);
                 if(v.type != General_type::NUMBER) {
                     throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\t- But got: " + general_t2token(v.type).content,global::get_line()};
@@ -68,7 +68,7 @@ public:
             {
                 car_Number | car_PlaceHolderAble
             },
-            [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+            [](std::vector<GeneralTypeToken> args)->Variable {
                 auto v = tools::check4placeholder(args[0]);
                 if(v.type != General_type::NUMBER) {
                     throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\t- But got: " + general_t2token(v.type).content,global::get_line()};
@@ -80,7 +80,7 @@ public:
             {
                 car_Number | car_PlaceHolderAble
             },
-            [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+            [](std::vector<GeneralTypeToken> args)->Variable {
                 auto v = tools::check4placeholder(args[0]);
                 if(v.type != General_type::NUMBER) {
                     throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\t- But got: " + general_t2token(v.type).content,global::get_line()};
@@ -92,7 +92,7 @@ public:
             {
                 car_ArgumentList
             },
-            [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+            [](std::vector<GeneralTypeToken> args)->Variable {
                 auto alist = tools::parse_argument_list(args[0]);
                 if(alist.size() != 1) {
                     throw errors::MWSMessageException{"Too many/few arguments for command: sin\n\t- Expected: 1\n\t- But got: " + std::to_string(alist.size()) ,global::get_line()};
@@ -109,7 +109,7 @@ public:
             {
                 car_ArgumentList
             },
-            [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+            [](std::vector<GeneralTypeToken> args)->Variable {
                 auto alist = tools::parse_argument_list(args[0]);
                 if(alist.size() != 1) {
                     throw errors::MWSMessageException{"Too many/few arguments for command: cos\n\t- Expected: 1\n\t- But got: " + std::to_string(alist.size()) ,global::get_line()};
@@ -126,7 +126,7 @@ public:
             {
                 car_ArgumentList
             },
-            [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+            [](std::vector<GeneralTypeToken> args)->Variable {
                 auto alist = tools::parse_argument_list(args[0]);
                 if(alist.size() != 1) {
                     throw errors::MWSMessageException{"Too many/few arguments for command: tan\n\t- Expected: 1\n\t- But got: " + std::to_string(alist.size()) ,global::get_line()};
@@ -143,7 +143,7 @@ public:
             {
                 car_Number | car_PlaceHolderAble
             },
-            [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+            [](std::vector<GeneralTypeToken> args)->Variable {
                 auto v = tools::check4placeholder(args[0]);
                 if(v.type != General_type::NUMBER) {
                     throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\t- But got: " + general_t2token(v.type).content,global::get_line()};
@@ -155,7 +155,7 @@ public:
             {
                 car_Number | car_PlaceHolderAble
             },
-            [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+            [](std::vector<GeneralTypeToken> args)->Variable {
                 auto v = tools::check4placeholder(args[0]);
                 if(v.type != General_type::NUMBER) {
                     throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\t- But got: " + general_t2token(v.type).content,global::get_line()};
@@ -167,7 +167,7 @@ public:
             {
                 car_Number | car_PlaceHolderAble
             },
-            [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+            [](std::vector<GeneralTypeToken> args)->Variable {
                 auto v = tools::check4placeholder(args[0]);
                 if(v.type != General_type::NUMBER) {
                     throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\t- But got: " + general_t2token(v.type).content,global::get_line()};
@@ -180,7 +180,7 @@ public:
                 car_Number | car_PlaceHolderAble,
                 car_Number | car_PlaceHolderAble
             },
-            [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+            [](std::vector<GeneralTypeToken> args)->Variable {
                 auto v = tools::check4placeholder(args[0]);
                 if(v.type != General_type::NUMBER) {
                     throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\t- But got: " + general_t2token(v.type).content,global::get_line()};
@@ -204,7 +204,7 @@ public:
                 car_Number | car_PlaceHolderAble,
                 car_Number | car_PlaceHolderAble
             },
-            [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+            [](std::vector<GeneralTypeToken> args)->Variable {
                 auto v = tools::check4placeholder(args[0]);
                 if(v.type != General_type::NUMBER) {
                     throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\t- But got: " + general_t2token(v.type).content,global::get_line()};
@@ -230,7 +230,7 @@ public:
                 car_Number | car_PlaceHolderAble,
                 car_Number | car_PlaceHolderAble
             },
-            [](std::vector<GeneralTypeToken> args)->GeneralTypeToken {
+            [](std::vector<GeneralTypeToken> args)->Variable {
                 auto v = tools::check4placeholder(args[0]);
                 if(v.type != General_type::NUMBER) {
                     throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\t- But got: " + general_t2token(v.type).content,global::get_line()};

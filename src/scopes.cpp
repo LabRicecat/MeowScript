@@ -260,28 +260,34 @@ Function* MeowScript::get_function(std::string name,std::vector<Parameter> param
     return nullptr;
 }
 
+std::vector<Function> MeowScript::get_function_overloads(std::string name) {
+    std::vector<Function> functions;
+    int index = current_scope()->index;
+    while(index > -1) {
+        for(auto& i : scopes[index].functions) {
+            if(i.first == name) {
+                for(auto& j : i.second) { 
+                    functions.push_back(j);
+                }
+            }
+        }
+        index = scopes[index].parent;
+    }
+    return functions;
+}
+
 bool MeowScript::add_function(std::string name, Function fun) {
     if(::get_function(name,fun.params) != nullptr) {
         return false;
     }
-    if(fun.scope_idx == 0) {
-        fun.scope_idx = get_new_scope();
-        scopes[fun.scope_idx].parent = current_scope()->index;
+    if(fun.parent == 0) {
+        fun.parent = current_scope()->index;
     }
     current_scope()->functions[name].push_back(fun);
     return true;
 }
 
 void MeowScript::add_object(std::string name, Object obj) {
-    for(auto& i : obj.methods) {
-        for(auto& j : i.second) {
-            int sscope = j.scope_idx;
-            j.scope_idx = get_new_scope();
-            scopes[j.scope_idx] = scopes[sscope];
-            scopes[j.scope_idx].parent = obj.parent_scope;
-            scopes[j.scope_idx].index = j.scope_idx;
-        }
-    }
     set_variable(name,obj);
 }
 

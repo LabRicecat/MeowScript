@@ -97,6 +97,7 @@ bool is_brace_pair(char open,char close);
 bool is_event(std::string name);
 bool is_dictionary(Token context);
 bool is_literal_value(Token context);
+bool is_valid_function_return(Token context);
 
 using lexed_tokens = std::vector<Line>;
 

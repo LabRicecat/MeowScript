@@ -83,12 +83,13 @@ inline CommandArgReqirement car_PlaceHolderAble = car_Expression | car_Compound 
 inline CommandArgReqirement car_Ongoing = 200;
 
 struct GeneralTypeToken;
+struct Variable;
 
 struct Command {
     std::string name;
     std::vector<CommandArgReqirement> args;
 
-    GeneralTypeToken (*run)(std::vector<GeneralTypeToken> args);
+    Variable (*run)(std::vector<GeneralTypeToken> args);
 };
 
 std::vector<Command>* get_command_list();

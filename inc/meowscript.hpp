@@ -8,3 +8,7 @@
 #include "variables.hpp"
 #include "runner.hpp"
 #include "scopes.hpp"
+#include "tools.hpp"
+#include "objects.hpp"
+#include "expressions.hpp"
+#include "kittenlexer.hpp" // external

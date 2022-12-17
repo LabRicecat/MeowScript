@@ -27,7 +27,7 @@ void error_message_pretty(MeowScript::errors::MWSMessageException& err) {
     }
 }
 
-// #define MEOWSCRIPT_DEBUG_MODE
+#define MEOWSCRIPT_DEBUG_MODE
 
 int main(int argc, char** argv) {
     if(argc == 1) {
@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
     }
 #ifdef MEOWSCRIPT_DEBUG_MODE
     else if(arg == "--debug" || arg == "-d") {
-
+        auto a = MeowScript::lex_text("func __F(a) ->Number {}");
     }
 #endif
     else if(arg == "--version" || arg == "-v") {

@@ -15,6 +15,38 @@ bool ArgRule::operator==(ArgRule r) {
     return *operat == *r.operat && value == r.value && op_name == r.op_name;
 }
 
+Parameter::Parameter(const Parameter& p) {
+    this->type = p.type;
+    this->name = p.name;
+    this->struct_name = p.struct_name;
+    this->literal_value = p.literal_value;
+    if(p.m_fntmpl != nullptr) {
+        if(this->m_fntmpl == nullptr) this->m_fntmpl = std::make_unique<Function>();
+        *this->m_fntmpl = *p.m_fntmpl;
+    }
+}
+
+void Parameter::operator=(const Parameter& p) {
+    this->type = p.type;
+    this->name = p.name;
+    this->struct_name = p.struct_name;
+    this->literal_value = p.literal_value;
+}
+
+void Parameter::set_functiontemplate(Function func) {
+    if(m_fntmpl != nullptr) m_fntmpl.reset();
+    m_fntmpl = std::make_unique<Function>();
+    *m_fntmpl = func;
+}
+
+bool Parameter::needs_function() const {
+    return m_fntmpl != nullptr;
+}
+
+Function Parameter::get_fntemplate() const {
+    return *m_fntmpl;
+}
+
 bool Parameter::needs_literal_value() const {
     return literal_value.type != Variable::Type::VOID;
 }
@@ -22,6 +54,7 @@ bool Parameter::needs_literal_value() const {
 bool Parameter::matches(Variable var) const {
     if(needs_literal_value() && var != literal_value) return false;
     if(!ruleset_matches(ruleset,var)) return false;
+    if(needs_function() && var.type != Variable::Type::Function) return false;
     return \
         (
             needs_literal_value() &&
@@ -40,6 +73,10 @@ bool Parameter::matches(Variable var) const {
             struct_matches(get_struct(struct_name),&var.storage.obj)
         ) ||
         (
+            needs_function() &&
+            function_match_template(get_fntemplate(),var.storage.func)
+        ) ||
+        (
             var.type != Variable::Type::Object &&
             var.type == type
         );
@@ -49,6 +86,7 @@ bool Parameter::matches(Parameter param) const {
     if(param.needs_literal_value() != needs_literal_value()
     || (param.needs_literal_value() && param.literal_value != literal_value)) return false;
     if(!same_ruleset(ruleset,param.ruleset)) return false;
+    if(needs_function() != param.needs_function()) return false;
     return \
         (
             needs_literal_value() &&
@@ -71,6 +109,10 @@ bool Parameter::matches(Parameter param) const {
             param.type == Variable::Type::Object &&
             type == Variable::Type::Object &&
             struct_matches(get_struct(struct_name),get_struct(param.struct_name))
+        ) ||
+        (
+            needs_function() &&
+            function_match_template(get_fntemplate(),param.get_fntemplate())
         ) ||
         (
             param.type != Variable::Type::Object &&
@@ -215,12 +257,9 @@ Variable MeowScript::Function::run(std::vector<Variable> args, bool method_mode)
     int saved_istruct = global::in_struct;
     global::in_struct = 0;
     GeneralTypeToken gtt_ret;
-    if(method_mode) {
-        gtt_ret = run_lexed(body,false,false,-1,arg_map,this->file);
-    }
-    else {
-        gtt_ret = run_lexed(body,false,true,scope_idx,arg_map,this->file);
-    }
+    if(parent >= 0) load_scope(parent,{},true);
+    gtt_ret = run_lexed(body,false,true,-1,arg_map,this->file);
+    if(parent >= 0) pop_scope();
     global::in_struct = saved_istruct;
     if(gtt_ret.type != General_type::VOID && gtt_ret.type != General_type::UNKNOWN) {
         Variable var_ret;
@@ -236,4 +275,212 @@ Variable MeowScript::Function::run(std::vector<Variable> args, bool method_mode)
     else {
         return Variable();
     }
+}
+
+std::string Function::to_string() const {
+    std::string ret = "[Function ";
+    ret += "(";
+    for(auto i : params) {
+        if(i.needs_literal_value())
+            ret += i.literal_value.to_string();
+        else ret += i.name;
+        
+        if(!i.ruleset.empty()) {
+            ret += " (";
+            for(auto j : i.ruleset) {
+                ret += j.op_name + " " + j.value.to_string() + ",";
+            }
+            ret.pop_back();
+            ret += ")";
+        }
+        if(i.type != Variable::Type::UNKNOWN && i.type != Variable::Type::ANY) {
+            ret += " :: " + var_t2token(i.type).content;
+        }
+
+        ret += ",";
+    }
+    if(!params.empty()) {
+        ret.pop_back();
+    }
+    ret += ")";
+
+    ret += " -> ";
+    if(return_type.type == Variable::Type::UNKNOWN) ret += "Any";
+    else ret += var_t2token(return_type.type).content;
+
+    ret += " {";
+    for(auto i : body) {
+        for(auto j : i.source) {
+            ret += j.content + " ";
+        }
+        if(!i.source.empty()) ret.pop_back();
+        ret += "; ";
+    }
+    if(!body.empty()) {ret.pop_back();ret.pop_back();}
+    ret += "}]";
+    return ret;
+}
+
+#define CHECK4(idx,car) if(!car.matches(get_type(tokens[idx],car))) return false;
+
+bool MeowScript::is_function_literal(Token token) {
+    if(token.in_quotes || token.content == "") return false;
+    if(!brace_check(token,'[',']')) return false;
+    token.content.erase(token.content.begin());
+    token.content.erase(token.content.end()-1);
+
+    auto l = lex_text(token.content);
+    std::vector<Token> tokens;
+    for(auto i : l)
+        for(auto j : i.source)
+            tokens.push_back(j);
+    
+    if(tokens.size() != 5) return false;
+
+    if(tokens[0].content != "Function") return false;
+    CHECK4(1,car_ParameterList)
+    CHECK4(2,car_Operator)
+    if(tokens[2].content != "->") return false;
+    if(!is_valid_function_return(tokens[3].content)) return false;
+    CHECK4(4,car_Compound)
+
+    return true;
+}
+
+// #undef CHECK4 <-- later
+
+std::vector<Function> MeowScript::functions_from_string(std::string src) {
+    if(!is_function_literal(src)) return std::vector<Function>{};
+    std::vector<Function> ret;
+    src.pop_back();
+    src.erase(src.begin());
+    auto l = lex_text(src);
+    std::vector<Token> tokens;
+    for(auto i : l)
+        for(auto j : i.source)
+            tokens.push_back(j);
+
+    tokens.erase(tokens.begin());
+
+    Command* command = get_command("func"); // first overload is the biggest one
+    if(command == nullptr) {
+        // eh
+    }
+
+    std::vector<GeneralTypeToken> gtts;
+    std::vector<Token> tks;
+    for(size_t i = 0; i < tokens.size(); ++i) {
+        while(i < tokens.size() && tokens[i].content != "|") {
+            tks.push_back(tokens[i]);
+            ++i;
+        }
+        tks.insert(tks.begin(),"__F");
+        if(tks.size() != command->args.size()) {
+            // error
+        }
+        for(size_t i = 0; i < tks.size(); ++i) {
+            gtts.push_back(GeneralTypeToken{tks[i],command->args[i]});
+        }
+        new_scope();
+        command->run(gtts);
+        Function f = current_scope()->functions["__F"][0];
+        pop_scope();
+        ret.push_back(f);
+        ++i; // the "|"
+    }
+    
+    return ret;
+}
+
+std::string MeowScript::funcoverloads_to_string(std::vector<Function> overloads) {
+    if(overloads.empty()) return "";
+    std::string ret = "[Function ";
+    for(auto i : overloads) {
+        std::string tmp = i.to_string();
+        tmp.erase(tmp.begin(),tmp.begin() + ((std::string)"[Function ").size());
+        tmp.pop_back();
+        ret += tmp + " | ";
+    }
+    ret.pop_back();ret.pop_back();ret.pop_back();
+    ret += "]";
+    return ret;
+}
+
+Function* MeowScript::function_from_overloads(std::vector<Function>& overloads, std::vector<Variable> args) {
+    for(auto& i : overloads) {
+        if(func_param_match(i,args)) {
+            return &i;
+        }
+    }
+    return nullptr;
+}
+
+bool MeowScript::is_funcparam_literal(Token token) {
+    if(token.in_quotes || token.content == "") return false;
+    if(!brace_check(token,'[',']')) return false;
+    token.content.erase(token.content.begin());
+    token.content.erase(token.content.end()-1);
+
+    auto l = lex_text(token.content);
+    std::vector<Token> tokens;
+    for(auto i : l)
+        for(auto j : i.source)
+            tokens.push_back(j);
+    
+    if(tokens.size() != 4) return false;
+
+    if(tokens[0].content != "Function") return false;
+    CHECK4(1,car_ParameterList)
+    CHECK4(2,car_Operator)
+    if(tokens[2].content != "->") return false;
+    if(!is_valid_function_return(tokens[3].content)) return false;
+
+    return true;
+}
+
+#undef CHECK4
+
+Function MeowScript::funcparam_from_literal(std::string src) {
+    if(!is_funcparam_literal(src)) return Function{};
+    Function ret;
+    src.erase(src.begin());
+    src.erase(src.end()-1);
+    src += " {}";
+    src.erase(src.begin(),src.begin() + ((std::string)"[Function").size());
+    src = "__F " + src;
+    auto l = lex_text(src);
+    std::vector<Token> tks;
+    for(auto i : l)
+        for(auto j : i.source)
+            tks.push_back(j);
+
+    Command* command = get_command("func");
+    std::vector<GeneralTypeToken> gtts;
+    for(size_t i = 0; i < tks.size(); ++i) {
+        gtts.push_back(GeneralTypeToken{tks[i],command->args[i]});
+    }
+    new_scope();
+    command->run(gtts);
+    Function f = current_scope()->functions["__F"][0];
+    pop_scope();
+
+    ret.params = f.params;
+    ret.return_type = f.return_type;
+    return ret;
+}
+
+bool MeowScript::function_match_template(Function templ, Function func) {
+    return \
+        templ.return_type.matches(func.return_type) &&
+        paramlist_matches(templ.params,func.params);
+}
+
+
+bool MeowScript::function_match_template(Function templ, std::vector<Function> func) {
+    for(auto i : func) {
+        if(function_match_template(templ,i)) {
+            return true;
+        }
+    }
+    return false;
 }

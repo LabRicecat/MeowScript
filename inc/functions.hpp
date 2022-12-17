@@ -8,6 +8,7 @@
 #include <map>
 #include <tuple>
 #include <string>
+#include <memory>
 
 MEOWSCRIPT_HEADER_BEGIN
 
@@ -23,8 +24,11 @@ struct ArgRule {
 };
 
 using RuleSet = std::vector<ArgRule>;
-
+struct Function;
 struct Parameter {
+private:
+    std::unique_ptr<Function> m_fntmpl = nullptr;
+public:
     Variable::Type type = Variable::Type::ANY;
     std::string name;
     std::string struct_name;
@@ -35,22 +39,21 @@ struct Parameter {
     Parameter(Variable::Type type) : type(type) {}
     Parameter(Variable::Type type, std::string name) : type(type), name(name) {}
     Parameter(Variable::Type type, std::string name, std::string struct_name) : type(type), name(name), struct_name(struct_name) {}
+    Parameter(const Parameter& p);
     void operator=(Variable::Type type) {
         this->type = type;
     }
 
     bool needs_literal_value() const;
+    bool needs_function() const;
 
     bool matches(Variable var) const;
     bool matches(Parameter param) const;
 
-    void operator=(Parameter p) {
-        this->type = p.type;
-        this->name = p.name;
-        this->struct_name = p.struct_name;
-    }
+    void operator=(const Parameter& p);
 
-    static Variable literal_null;
+    void set_functiontemplate(Function func);
+    Function get_fntemplate() const;
 };
 
 bool paramlist_matches(std::vector<Parameter> params1,std::vector<Parameter> params2);
@@ -65,13 +68,42 @@ public:
     using ReturnType = Parameter;
     std::vector<Line> body;
     std::vector<Parameter> params;
-    unsigned int scope_idx = 0;
+    int parent = -1;
     ReturnType return_type = Variable::Type::UNKNOWN;
     fs::path file;
     // Takes care of the required amount of arguments and their types as well as the return value
     // Throws `MWSMessageException` on error
     Variable run(std::vector<Variable> args, bool method_mode = false);
+
+    std::string to_string() const;
+
+    Function() {}
+    Function(const Function& f) {
+        this->body = f.body;
+        this->parent = f.parent;
+        this->file = f.file;
+        this->return_type = f.return_type;
+        this->params = f.params;
+    }
+
+    void operator=(const Function& f) {
+        this->body = f.body;
+        this->parent = f.parent;
+        this->file = f.file;
+        this->return_type = f.return_type;
+        this->params = f.params;
+    }
 };
+
+bool is_function_literal(Token token);
+std::vector<Function> functions_from_string(std::string src);
+std::string funcoverloads_to_string(std::vector<Function> overloads);
+Function* function_from_overloads(std::vector<Function>& overloads, std::vector<Variable> args);
+
+bool is_funcparam_literal(Token token);
+Function funcparam_from_literal(std::string src);
+bool function_match_template(Function templ, Function func);
+bool function_match_template(Function templ, std::vector<Function> func);
 
 struct Event {
     std::vector<Function> listeners;

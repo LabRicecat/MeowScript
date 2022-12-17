@@ -20,7 +20,9 @@ unsigned int MeowScript::global::get_line() {
     int index = current_scope()->index;
     while(index > 0) {
         line += scopes[index].current_line;
+        if(scopes[index].parent == index) break;
         index = scopes[index].parent;
+        
     }
     // line += scopes[index].current_line;
     return line;
