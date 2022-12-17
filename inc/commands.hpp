@@ -81,6 +81,7 @@ inline CommandArgReqirement car_Object = General_type::OBJECT;
 inline CommandArgReqirement car_Struct = General_type::STRUCT;
 inline CommandArgReqirement car_Typename = General_type::TYPENAME;
 inline CommandArgReqirement car_PlaceHolderAble = car_Expression | car_Compound | car_Name;
+inline CommandArgReqirement car_VarTypes = car_String | car_List | car_Object | car_Number | car_Dictionary | car_Function;
 inline CommandArgReqirement car_Ongoing = 200;
 
 struct GeneralTypeToken;

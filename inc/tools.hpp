@@ -10,11 +10,15 @@
 MEOWSCRIPT_HEADER_BEGIN
 
 struct GeneralTypeToken;
+struct Operator;
 
 using argument_list = std::vector<GeneralTypeToken>;
+using matchestatement_list = std::vector<std::tuple<Operator*,GeneralTypeToken,std::vector<Token>>>;
+
 namespace tools {
     argument_list parse_argument_list(GeneralTypeToken context);
     argument_list parse_argument_list(Token context);
+    matchestatement_list parse_matchstatement(Token context, General_type otype);
 
     // Checks if token could be a variable name and if yes \
     // tries to convert this variable into a GeneralTypeToken and returns it.

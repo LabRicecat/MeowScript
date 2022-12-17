@@ -474,7 +474,7 @@ static std::vector<Command> commandlist = {
         current_scope()->last_if_result = true;
         return general_null;
     }},
-    
+
     {"using",
         {
             car_Name | car_Module
@@ -1097,6 +1097,71 @@ OUT:
         f.body = lex_text(body);
         
         return f;
+    }},
+
+    {"match",
+        {
+            car_VarTypes | car_PlaceHolderAble,
+            car_Compound
+        },
+    [](std::vector<GeneralTypeToken> args)->Variable {
+        MWS_CAN_BE_IN_STRUCT()
+        auto val = tools::check4placeholder(args[0]).to_variable();
+
+        std::string body = args[1].source.content;
+        body.erase(body.begin());
+        body.pop_back();
+        auto parsed = tools::parse_matchstatement(body,var_t2general_t(val.type));
+
+        if(parsed.empty()) return general_null;
+
+        std::vector<Token> elseexec; 
+
+        for(auto i : parsed) {
+            auto [op,vc,exec] = i;
+            if(vc.type == General_type::KEYWORD && vc.source.content == "else") {
+                elseexec = exec;
+            }
+            else if(vc.type == General_type::TYPENAME || is_valid_function_return(vc.source.content)) {
+                Parameter rt = returntype_from_string(vc);
+                if(rt.matches(val)) {
+                    lexed_tokens tks(1);
+                    tks[0].source = exec;
+                    return run_lexed(tks,false,false,-1,{},"",false,true);
+                }
+            }
+            else {
+                Variable v;
+                try {
+                    v = vc.to_variable();
+                }
+                catch(...) {
+                    throw errors::MWSMessageException{"Unexpected token: " + vc.to_string(),global::get_line()};
+                }
+
+                if(op) {
+                    auto res = op->parse(v,val);
+                    if(res.type == Variable::Type::Number && res.storage.number == 0) {
+                        lexed_tokens tks(1);
+                        tks[0].source = exec;
+                        return run_lexed(tks,false,false,-1,{},"",false,true);
+                    }
+                }
+                else {
+                    if(val == v) {
+                        lexed_tokens tks(1);
+                        tks[0].source = exec;
+                        return run_lexed(tks,false,false,-1,{},"",false,true);
+                    }
+                }
+            }
+        }
+        if(!elseexec.empty()) {
+            lexed_tokens tks(1);
+            tks[0].source = elseexec;
+            return run_lexed(tks,false,false,-1,{},"",false,true);
+        }
+        return general_null;
     }},
 };
 

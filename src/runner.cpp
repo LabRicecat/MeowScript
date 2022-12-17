@@ -43,10 +43,23 @@ Variable MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool save_sco
         identf_line.push_back(get_type(lines[i].source[0]));
         global::add_trace(global::get_line(),tools::until_newline(lines[i].source),global::include_path.empty() ? std::filesystem::current_path().string() : global::include_path.top().string());
 
+        bool cnt = false;
         while(identf_line.front() == General_type::COMPOUND) {
+            GeneralTypeToken gtt;
+            gtt = tools::check4compound(lines[i].source[0]);
+            if(gtt.type == General_type::VOID) {
+                if(lines[i].source.size() != 1) {
+                    throw errors::MWSMessageException{"Arguments on compound that evaluates to VOID!",global::get_line()};
+                }
+                else {
+                    cnt = true;
+                    break;
+                }
+            }
             lines[i].source[0] = tools::check4compound(lines[i].source[0]).to_string();
             identf_line.front() = get_type(lines[i].source[0]);
         }
+        if(cnt) continue;
 
         std::string name = lines[i].source[0];
 

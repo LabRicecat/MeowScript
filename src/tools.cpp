@@ -58,6 +58,54 @@ argument_list MeowScript::tools::parse_argument_list(Token context) {
     return ret;
 }
 
+matchestatement_list MeowScript::tools::parse_matchstatement(Token context, General_type otype) {
+    matchestatement_list ret;
+
+    auto lex = lex_text(context.content);
+
+    for(size_t i = 0; i < lex.size(); ++i) {
+        Operator* op = nullptr;
+        GeneralTypeToken next;
+        int offset = 0;
+        if(lex[i].source.empty()) continue;
+        if(lex[i].source.size() < 2) {
+            throw errors::MWSMessageException{"Invalid match body line!",global::get_line()};
+        }
+        if(is_operator(lex[i].source[0])) offset = 1;
+        if(lex[i].source[0].content == "else") {
+            next.type = General_type::KEYWORD;
+            next.source.content = "else";
+        }
+        else {
+            next = GeneralTypeToken{tools::check4placeholder(lex[i].source[offset]).to_string(),
+                car_Typename | car_PlaceHolderAble | car_VarTypes | car_Compound
+            };
+
+            if(next.type == General_type::UNKNOWN) {
+                throw errors::MWSMessageException{"Unexpected token: " + lex[i].source[offset].content,global::get_line()};
+            }
+        }
+        if(is_operator(lex[i].source[0])) {
+            op = get_operator(lex[i].source[0],otype,next.type);
+            if(op == nullptr) {
+                throw errors::MWSMessageException{"No operator matches the given types!\n- Got: " 
+                    + general_t2token(otype).content + " " + lex[i].source[0].content + " " + general_t2token(next.type).content,
+                    global::get_line()};
+            }
+        }
+
+        if(lex[i].source.size() < (offset + 1) || lex[i].source[offset+1].content != "=>") {
+            throw errors::MWSMessageException{"Invalid match body line!",global::get_line()};
+        }
+        std::vector<Token> ntks;
+        for(size_t j = offset+2; j < lex[i].source.size(); ++j) {
+            ntks.push_back(lex[i].source[j]);
+        }
+        ret.push_back(std::make_tuple(op,next,ntks));
+    }
+    return ret;
+}
+
 const std::vector<std::pair<GeneralTypeToken,GeneralTypeToken>> Dictionary::pairs() const {
     std::vector<std::pair<GeneralTypeToken,GeneralTypeToken>> ret;
     for(size_t i = 0; i < keys().size(); ++i) {
