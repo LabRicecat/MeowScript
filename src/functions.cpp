@@ -475,7 +475,6 @@ bool MeowScript::function_match_template(Function templ, Function func) {
         paramlist_matches(templ.params,func.params);
 }
 
-
 bool MeowScript::function_match_template(Function templ, std::vector<Function> func) {
     for(auto i : func) {
         if(function_match_template(templ,i)) {
@@ -483,4 +482,30 @@ bool MeowScript::function_match_template(Function templ, std::vector<Function> f
         }
     }
     return false;
+}
+
+Parameter MeowScript::returntype_from_string(GeneralTypeToken tkn) {
+    Parameter return_type;
+    if(tkn.source.content == "Any") {
+        return_type = Variable::Type::ANY;
+    }
+    else if(tkn.source.content == "Void") {
+        return_type = Variable::Type::VOID;
+    }
+    else if(tkn.type == General_type::STRUCT) {
+        return_type.type = Variable::Type::Object;
+        return_type.struct_name = tkn.source.content;
+    }
+    else if(tkn.source.content == "Object") {
+        return_type.type = Variable::Type::Object;
+        return_type.struct_name = "";
+    }
+    else if(is_funcparam_literal(tkn.source.content)) {
+        return_type.set_functiontemplate(funcparam_from_literal(tkn.source.content));
+        return_type.type = Variable::Type::Function; 
+    }
+    else {
+        return_type = token2var_t(tkn.to_string());
+    }
+    return return_type;
 }

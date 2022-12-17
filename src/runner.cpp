@@ -52,16 +52,24 @@ Variable MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool save_sco
 
         std::string str_line;
         for(auto k : lines[i].source) {
-            for(size_t j = 0; j < k.content.size(); ++j) {
-                if(k.content[j] == '\"') {
-                    k.content.insert(k.content.begin() + j,'\\');
-                    ++j;
-                }
-            }
             if(k.in_quotes) {
-                k = "\"" + k.content + "\"";
+                str_line += " \"" + k.content + "\"";
             }
-            str_line += " " + k.content;
+            else if(in_any_braces(k)) {
+                str_line += " " + k.content;
+            }
+            else {
+                for(size_t j = 0; j < k.content.size(); ++j) {
+                    if(k.content[j] == '\"') {
+                        k.content.insert(k.content.begin() + j,'\\');
+                        ++j;
+                    }
+                }
+                if(k.in_quotes) {
+                    k = "\"" + k.content + "\"";
+                }
+                str_line += " " + k.content;
+            }
         }
         str_line = tools::remove_unneeded_chars(str_line);
         if(get_type(str_line,car_Expression) != General_type::EXPRESSION && is_expression("(" + str_line + ")")) {

@@ -105,6 +105,8 @@ Function funcparam_from_literal(std::string src);
 bool function_match_template(Function templ, Function func);
 bool function_match_template(Function templ, std::vector<Function> func);
 
+Parameter returntype_from_string(GeneralTypeToken tkn);
+
 struct Event {
     std::vector<Function> listeners;
     std::string from_file;

@@ -60,6 +60,7 @@ public:
         VOID, // Guess what
         OUT_OF_RANGE,
     }type = Type::UNKNOWN;
+    std::string struct_name;
 
     stor_ storage;
 

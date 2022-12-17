@@ -79,6 +79,7 @@ inline CommandArgReqirement car_Keyword = General_type::KEYWORD;
 inline CommandArgReqirement car_Dictionary = General_type::DICTIONARY;
 inline CommandArgReqirement car_Object = General_type::OBJECT;
 inline CommandArgReqirement car_Struct = General_type::STRUCT;
+inline CommandArgReqirement car_Typename = General_type::TYPENAME;
 inline CommandArgReqirement car_PlaceHolderAble = car_Expression | car_Compound | car_Name;
 inline CommandArgReqirement car_Ongoing = 200;
 

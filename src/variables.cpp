@@ -176,6 +176,7 @@ Token MeowScript::general_t2token(General_type type) {
         "Dictionary",
         "Struct",
         "Object",
+        "Typename",
         "Unknown",
         "Void"
     };
@@ -301,6 +302,9 @@ General_type MeowScript::get_type(Token context, CommandArgReqirement expected) 
     }
     if(is_function_literal(context) && expected.matches(General_type::FUNCTION)) {
         return General_type::FUNCTION;
+    }
+    if(is_valid_var_t(context) || is_funcparam_literal(context)) {
+        return General_type::TYPENAME;
     }
     if(is_function(context)) {
         return General_type::FUNCTION;

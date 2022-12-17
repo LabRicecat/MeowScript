@@ -104,6 +104,62 @@ static std::vector<Command> commandlist = {
         new_variable(args[0].source.content,0);
         return general_null;
     }},
+    {"new",
+        {
+            car_Name,
+            car_Number | car_String | car_List | car_Dictionary | car_PlaceHolderAble | car_Function,
+            car_Operator,
+            car_Typename | car_Struct
+        },
+    [](std::vector<GeneralTypeToken> args)->Variable {
+        MWS_CAN_BE_IN_STRUCT()
+        Variable var;
+        if(args[2].source.content != "::" && args[2].source.content != ":") {
+            throw errors::MWSMessageException{"Invalid token \"" + args[2].source.content + "\", expected :: or :",global::get_line()};
+        }
+        if(is_struct(args[3].source)) {
+            var.struct_name = args[3].source;
+            var.type = Variable::Type::Object;
+        }
+        else if(is_funcparam_literal(args[3].source)) {
+            var.type = Variable::Type::Function;
+            // yes, you can't specify this any further, sorry
+        }
+        else {
+            var.type = token2var_t(args[3].source);
+        }
+        var.fixed_type = true;
+        var.set(tools::check4placeholder(args[1]).to_variable());
+        new_variable(args[0].source.content,var);
+        return general_null;
+    }},
+    {"new",
+        {
+            car_Name,
+            car_Operator,
+            car_Typename | car_Struct
+        },
+    [](std::vector<GeneralTypeToken> args)->Variable {
+        MWS_CAN_BE_IN_STRUCT()
+        Variable var;
+        if(args[1].source.content != "::" && args[1].source.content != ":") {
+            throw errors::MWSMessageException{"Invalid token \"" + args[1].source.content + "\", expected :: or :",global::get_line()};
+        }
+        if(is_struct(args[2].source)) {
+            var.struct_name = args[2].source;
+            var.type = Variable::Type::Object;
+        }
+        else if(is_funcparam_literal(args[2].source)) {
+            var.type = Variable::Type::Function;
+        }
+        else {
+            var.type = token2var_t(args[2].source);
+        }
+        var.fixed_type = true;
+        new_variable(args[0].source.content,var);
+        return general_null;
+    }},
+    
     {"const",
         {
             car_Name,
@@ -113,6 +169,7 @@ static std::vector<Command> commandlist = {
         MWS_CAN_BE_IN_STRUCT()
         Variable v = tools::check4placeholder(args[1]).to_variable();
         v.constant = true;
+        v.fixed_type = true;
         new_variable(args[0].source.content,tools::check4placeholder(args[1]).to_variable());
         return general_null;
     }},
@@ -138,6 +195,7 @@ static std::vector<Command> commandlist = {
         }
         return *var;
     }},
+    
     {"return",
         {
             car_Any
@@ -162,7 +220,7 @@ static std::vector<Command> commandlist = {
             car_Name | car_Function,
             car_ParameterList, 
             car_Operator, // ->
-            car_Name | car_Struct, // ReturnValue
+            car_Name | car_Struct | car_Typename, // ReturnValue
             car_Compound,
         },
     [](std::vector<GeneralTypeToken> args)->Variable {
@@ -177,27 +235,7 @@ static std::vector<Command> commandlist = {
             throw errors::MWSMessageException{ret_ty + " is not a valid return type!",global::get_line()};
         }
 
-        if(ret_ty == "Any") {
-            fun.return_type = Variable::Type::ANY;
-        }
-        else if(ret_ty == "Void") {
-            fun.return_type = Variable::Type::VOID;
-        }
-        else if(args[3].type == General_type::STRUCT) {
-            fun.return_type.type = Variable::Type::Object;
-            fun.return_type.struct_name = args[3].source.content;
-        }
-        else if(ret_ty == "Object") {
-            fun.return_type.type = Variable::Type::Object;
-            fun.return_type.struct_name = "";
-        }
-        else if(is_funcparam_literal(ret_ty)) {
-            fun.return_type.set_functiontemplate(funcparam_from_literal(ret_ty));
-            fun.return_type.type = Variable::Type::Function; 
-        }
-        else {
-            fun.return_type = token2var_t(args[3].to_string());
-        }
+        fun.return_type = returntype_from_string(args[3]);
 
         args[4].source.content.erase(args[4].source.content.begin());
         args[4].source.content.erase(args[4].source.content.begin()+args[4].source.content.size()-1);
@@ -436,6 +474,7 @@ static std::vector<Command> commandlist = {
         current_scope()->last_if_result = true;
         return general_null;
     }},
+    
     {"using",
         {
             car_Name | car_Module
@@ -453,6 +492,7 @@ static std::vector<Command> commandlist = {
         }
         return general_null;
     }},
+    
     {"for",
         {
             car_Name,
@@ -573,6 +613,7 @@ static std::vector<Command> commandlist = {
         ++global::continue_loop;
         return general_null;
     }},
+    
     {"typeof",
         {
             car_Any,
@@ -709,6 +750,7 @@ static std::vector<Command> commandlist = {
         }
         return general_null;
     }},
+    
     {"str2var",
         {
             car_ArgumentList
@@ -1016,6 +1058,46 @@ OUT:
         return general_null;
     }},
 
+    {"lambda",
+        {
+            car_ParameterList,
+            car_Operator, // the "->"
+            car_Typename | car_Struct,
+            car_Compound, 
+        },
+    [](std::vector<GeneralTypeToken> args)->Variable {
+        MWS_CAN_BE_IN_STRUCT()
+        Function f;
+        f.params = tools::parse_function_params(args[0].source);
+
+        if(args[1].source.content != "->") {
+            throw errors::MWSMessageException{"Expected \"->\" to declarate a return value, but got: " + args[1].to_string(),global::get_line()};
+        }
+
+        f.return_type = returntype_from_string(args[2]);
+        std::string body = args[3].source.content;
+        body.erase(body.begin());
+        body.pop_back();
+        f.body = lex_text(body);
+        return f;
+    }},
+    {"lambda",
+        {
+            car_ParameterList,
+            car_Compound, 
+        },
+    [](std::vector<GeneralTypeToken> args)->Variable {
+        MWS_CAN_BE_IN_STRUCT()
+        Function f;
+        f.params = tools::parse_function_params(args[0].source);
+
+        std::string body = args[3].source.content;
+        body.erase(body.begin());
+        body.pop_back();
+        f.body = lex_text(body);
+        
+        return f;
+    }},
 };
 
 std::vector<Command>* MeowScript::get_command_list() {

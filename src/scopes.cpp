@@ -126,7 +126,9 @@ void MeowScript::set_variable(std::string name, Variable var) {
     //if(vptr->type == Variable::Type::Object) {
         //call_obj_deconstruct(vptr->storage.obj);
     //}
-    vptr->set(var); // TODO: on error -> handling
+    if(!vptr->set(var)) {
+        throw errors::MWSMessageException{"Typed variable \"" + name + "\" is not allowed to be set with a value of type " + var_t2token(var.type).content + " (" + var.to_string() + "). Allowed type: " + var_t2token(vptr->type).content,global::get_line()};
+    }
 }
 
 void MeowScript::new_variable(std::string name, Variable var) {

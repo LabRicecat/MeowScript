@@ -98,6 +98,7 @@ bool is_event(std::string name);
 bool is_dictionary(Token context);
 bool is_literal_value(Token context);
 bool is_valid_function_return(Token context);
+bool in_any_braces(Token context);
 
 using lexed_tokens = std::vector<Line>;
 
@@ -125,6 +126,7 @@ enum class General_type {
     DICTIONARY,
     STRUCT,
     OBJECT,
+    TYPENAME,
     UNKNOWN,
     VOID,
     OUT_OF_RANGE

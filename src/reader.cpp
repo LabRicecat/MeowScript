@@ -197,6 +197,7 @@ bool MeowScript::is_valid_general_t(Token context) {
         "Dictionary",
         "Struct",
         "Object",
+        "Typename",
         "Unknown",
         "Void"
     };
@@ -279,7 +280,7 @@ bool MeowScript::is_valid_argumentlist(Token context) {
     bool found_sl = true;
 
     for(auto i : line) {
-        if(i.content == ",") {
+        if(i.content == "," && !i.in_quotes) {
             if(last == general_null) {
                 return false;
             }
@@ -450,6 +451,10 @@ bool MeowScript::is_literal_value(Token context) {
 
 bool MeowScript::is_valid_function_return(Token context) {
     return is_valid_var_t(context) || is_struct(context) || is_funcparam_literal(context);
+}
+
+bool MeowScript::in_any_braces(Token context) {
+    return brace_check(context,'(',')') || brace_check(context,'[',']') || brace_check(context,'{','}');
 }
 
 bool MeowScript::brace_check(Token context, char open, char close) {

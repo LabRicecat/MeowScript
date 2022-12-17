@@ -30,7 +30,7 @@ argument_list MeowScript::tools::parse_argument_list(Token context) {
     bool found_sl = true;
 
     for(auto i : line) {
-        if(i.content == ",") {
+        if(i.content == "," && !i.in_quotes) {
             if(last == general_null) {
                 return argument_list();
             }
