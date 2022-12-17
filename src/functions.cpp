@@ -61,6 +61,7 @@ bool Parameter::matches(Variable var) const {
             var == literal_value
         ) ||
         type == Variable::Type::UNKNOWN ||
+        var.type == Variable::Type::UNKNOWN || // eh?
         type == Variable::Type::ANY ||
         (
             var.type == Variable::Type::Object &&

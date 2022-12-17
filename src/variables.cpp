@@ -444,7 +444,7 @@ List MeowScript::construct_list(Token context) {
                 throw errors::MWSMessageException{"Invalid list format!\n" + context.content,global::get_line()};
             }
             try {
-                ret.elements.push_back(make_variable(i));
+                ret.elements.push_back(tools::check4placeholder(i).to_variable());
             }
             catch(std::exception& err) {
                 //std::cout << "(" << err.what() << ")\n";
