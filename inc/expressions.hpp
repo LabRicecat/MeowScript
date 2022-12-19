@@ -237,6 +237,26 @@ inline std::unordered_map<std::string,std::vector<Operator>> operators = {
                 }
             },
         }},
+        {"|", {
+            {
+                General_type::NUMBER, General_type::NUMBER, -1,
+                [](GeneralTypeToken left, GeneralTypeToken right)->Variable {
+                    Variable left_v = left.to_variable();
+                    Variable right_v = right.to_variable();
+                    return (long)left_v.storage.number | (long)right_v.storage.number;
+                }
+            },
+        }},
+        {"&", { // xor
+            {
+                General_type::NUMBER, General_type::NUMBER, -1,
+                [](GeneralTypeToken left, GeneralTypeToken right)->Variable {
+                    Variable left_v = left.to_variable();
+                    Variable right_v = right.to_variable();
+                    return (long)left_v.storage.number & (long)right_v.storage.number;
+                }
+            },
+        }},
 
         {"=", { // assign
             {
