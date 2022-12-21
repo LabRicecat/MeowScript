@@ -71,6 +71,8 @@ public:
     int parent = -1;
     ReturnType return_type = Variable::Type::UNKNOWN;
     fs::path file;
+    bool builtin_f = false;
+    Variable(*builtin)(std::vector<Variable> args);
     // Takes care of the required amount of arguments and their types as well as the return value
     // Throws `MWSMessageException` on error
     Variable run(std::vector<Variable> args, bool method_mode = false);
@@ -84,6 +86,8 @@ public:
         this->file = f.file;
         this->return_type = f.return_type;
         this->params = f.params;
+        this->builtin = f.builtin;
+        this->builtin_f = f.builtin_f;
     }
 
     void operator=(const Function& f) {

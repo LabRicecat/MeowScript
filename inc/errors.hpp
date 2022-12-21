@@ -18,7 +18,7 @@ namespace errors {
         MWSException() {}
         MWSException(unsigned int line) : line(line) {}
 
-        virtual const int constexpr get_line() const {
+        virtual const int get_line() const {
             return line;
         }
     };

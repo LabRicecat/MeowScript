@@ -5,3 +5,4 @@ bin
 meow-script
 stdlib/threading.cpp
 testing/
+stdlib/test.cpp

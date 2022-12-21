@@ -13,6 +13,7 @@ namespace fs = std::filesystem;
 MEOWSCRIPT_HEADER_BEGIN
 
 struct Variable;
+struct Function;
 
 namespace global {
     inline std::stack<fs::path> include_path;

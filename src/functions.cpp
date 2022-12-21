@@ -259,7 +259,10 @@ Variable MeowScript::Function::run(std::vector<Variable> args, bool method_mode)
     global::in_struct = 0;
     GeneralTypeToken gtt_ret;
     if(parent >= 0) load_scope(parent,{},true);
-    gtt_ret = run_lexed(body,false,true,-1,arg_map,this->file);
+
+    if(builtin_f) gtt_ret = builtin(args);
+    else gtt_ret = run_lexed(body,false,true,-1,arg_map,this->file);
+
     if(parent >= 0) pop_scope();
     global::in_struct = saved_istruct;
     if(gtt_ret.type != General_type::VOID && gtt_ret.type != General_type::UNKNOWN) {
@@ -309,17 +312,20 @@ std::string Function::to_string() const {
     if(return_type.type == Variable::Type::UNKNOWN) ret += "Any";
     else ret += var_t2token(return_type.type).content;
 
-    ret += " {";
-    for(auto i : body) {
-        for(auto j : i.source) {
-            ret += j.content + " ";
+    if(builtin_f) ret += "{ builtin }";
+    else {
+        ret += " {";
+        for(auto i : body) {
+            for(auto j : i.source) {
+                ret += j.content + " ";
+            }
+            if(!i.source.empty()) ret.pop_back();
+            ret += "; ";
         }
-        if(!i.source.empty()) ret.pop_back();
-        ret += "; ";
+        if(!body.empty()) {ret.pop_back();ret.pop_back();}
+        ret += "}";
     }
-    if(!body.empty()) {ret.pop_back();ret.pop_back();}
-    ret += "}]";
-    return ret;
+    return ret + "]";
 }
 
 #define CHECK4(idx,car) if(!car.matches(get_type(tokens[idx],car))) return false;

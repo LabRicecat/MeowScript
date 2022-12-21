@@ -28,6 +28,8 @@ struct Module {
     Module(std::string name,std::vector<Command> commands) : name(name), commands(commands) {}
 
     bool enabled = true;
+
+    void(*on_load)(Module* self);
 };
 
 inline std::vector<Module> modules;

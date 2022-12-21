@@ -482,7 +482,9 @@ static std::vector<Command> commandlist = {
     [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_MUST_NOT_BE_IN_STRUCT()
         if(args[0].type == General_type::MODULE && is_loaded_module(args[0].to_string())) {
-            get_module(args[0].to_string())->enabled = true;
+            Module* mod = get_module(args[0].to_string());
+            mod->enabled = true;
+            mod->on_load(mod);
         }
         else if(is_loadable_module(args[0].to_string())) {
             load_module(args[0].to_string() + MEOWSCRIPT_SHARED_OBJECT_EXT);

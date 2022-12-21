@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.9)
 project(meow-script 
-    VERSION 1.3.0 
+    VERSION 1.4.0 
     LANGUAGES CXX
     DESCRIPTION "An easy extendable scripting language"
 )
@@ -10,7 +10,7 @@ set(SOURCE
     src/commands.cpp
     src/expressions.cpp 
     src/functions.cpp 
-    src/global.cpp 
+    src/global.cpp
     src/main.cpp 
     src/modules.cpp 
     src/objects.cpp
