@@ -571,7 +571,7 @@ Variable MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool save_sco
             }
             return general_null;
         }
-        else if(global::in_compound != 0 && i+1 == lines.size()) {
+        else if(global::in_compound != 0 && i+1 == lines.size() && ret.type != Variable::Type::VOID && ret.type != Variable::Type::UNKNOWN) {
             if(from != "") {
                 global::include_path.pop();
             }
@@ -585,6 +585,9 @@ Variable MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool save_sco
             return ret;
         }
         else if(ret.type != Variable::Type::VOID && ret.type != Variable::Type::UNKNOWN) {
+            if(pass_return_down) {
+                return ret;
+            }
             std::cout << ret.to_string() << "\n";
         }
     }

@@ -1129,7 +1129,7 @@ OUT:
                 if(rt.matches(val)) {
                     lexed_tokens tks(1);
                     tks[0].source = exec;
-                    return run_lexed(tks,false,false,-1,{},"",false,true);
+                    return run_lexed(tks,false,false,-1,{},"",true,true);
                 }
             }
             else {
@@ -1146,14 +1146,14 @@ OUT:
                     if(res.type == Variable::Type::Number && res.storage.number == 0) {
                         lexed_tokens tks(1);
                         tks[0].source = exec;
-                        return run_lexed(tks,false,false,-1,{},"",false,true);
+                        return run_lexed(tks,false,false,-1,{},"",true,true);
                     }
                 }
                 else {
                     if(val == v) {
                         lexed_tokens tks(1);
                         tks[0].source = exec;
-                        return run_lexed(tks,false,false,-1,{},"",false,true);
+                        return run_lexed(tks,false,false,-1,{},"",true,true);
                     }
                 }
             }
@@ -1161,7 +1161,7 @@ OUT:
         if(!elseexec.empty()) {
             lexed_tokens tks(1);
             tks[0].source = elseexec;
-            return run_lexed(tks,false,false,-1,{},"",false,true);
+            return run_lexed(tks,false,false,-1,{},"",true,true);
         }
         return general_null;
     }},

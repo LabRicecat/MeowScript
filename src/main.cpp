@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
     }
 #ifdef MEOWSCRIPT_DEBUG_MODE
     else if(arg == "--debug" || arg == "-d") {
-        auto a = MeowScript::lex_text("func __F(a) ->Number {}");
+        std::cout << MeowScript::is_expression("(b = match 12 {\n> 10 => 4\nelse => 2\n} * foo()\n)") << "\n";
     }
 #endif
     else if(arg == "--version" || arg == "-v") {

@@ -2,6 +2,7 @@
 #include "../inc/errors.hpp"
 #include "../inc/global.hpp"
 #include "../inc/tools.hpp"
+#include "../inc/runner.hpp"
 
 MEOWSCRIPT_SOURCE_FILE
 
@@ -29,6 +30,10 @@ Variable MeowScript::parse_expression(std::string str) {
     }
     str.erase(str.begin());
     str.erase(str.begin()+str.size()-1);
+
+    if(str == "print (1+1)") {
+        std::cout << "c\n";
+    }
 
     auto lines = lex_text(str);
     std::vector<Token> vec;
@@ -63,21 +68,46 @@ Variable MeowScript::parse_expression(std::string str) {
     }
 
     ++global::in_expression;
+    bool f_op = false;
     std::stack<std::string> ops;
-    std::stack<GeneralTypeToken> st;
+    std::stack<std::vector<GeneralTypeToken>> st;
+    st.push({});
     for(size_t i = 0; i < lexed.size(); ++i) {
-        if(get_type(lexed[i],car_Expression) == General_type::EXPRESSION) {
-            st.push(parse_expression(lexed[i]));
-        }
-        else if(!lexed[i].in_quotes && is_operator(lexed[i].content)) {
-            if(st.empty()) {
+        if(!lexed[i].in_quotes && is_operator(lexed[i].content)) {
+            if(st.empty() || st.top().empty()) {
                 --global::in_expression;
                 throw errors::MWSMessageException{"Invalid expression: " + str,global::get_line()};
             }
             auto op = operators[lexed[i].content];
             while(!ops.empty() && operators[ops.top()][0].priority >= op[0].priority) {
-                GeneralTypeToken right = st.top(); st.pop();
-                GeneralTypeToken left = st.top(); st.pop();
+                GeneralTypeToken right;
+                GeneralTypeToken left;
+                if(st.top().size() == 1) {
+                    right = st.top().front(); st.pop();
+                }
+                else {
+                    lexed_tokens l(1);
+                    for(auto i : st.top()) {
+                        l[0].source.push_back(i.to_string());
+                    }
+                    ++global::in_compound;
+                    right = run_lexed(l,false,false,-1,{},"",false,true);
+                    --global::in_compound;
+                    st.pop();
+                }
+                if(st.top().size() == 1) {
+                    left = st.top().front(); st.pop();
+                }
+                else {
+                    lexed_tokens l(1);
+                    for(auto i : st.top()) {
+                        l[0].source.push_back(i.to_string());
+                    }
+                    ++global::in_compound;
+                    left = run_lexed(l,false,false,-1,{},"",false,true);
+                    --global::in_compound;
+                    st.pop();
+                }
 
                 Operator* roper;
                 roper = get_operator(ops.top(),left.type,right.type);
@@ -105,20 +135,48 @@ Variable MeowScript::parse_expression(std::string str) {
                     throw errors::MWSMessageException{"No overload of operator \"" + ops.top() + "\" matches the types: " + general_t2token(left.type).content + " | " + general_t2token(right.type).content,global::get_line()};
                 }
 
-                st.push(roper->parse(left,right));
+                st.push({roper->parse(left,right)});
                 ops.pop();
             }
             ops.push(lexed[i].content);
+            f_op = true;
         }
         else {
-            st.push(GeneralTypeToken(lexed[i]));
+            if(f_op) { st.push({}); f_op = false; }
+            st.top().push_back(GeneralTypeToken(lexed[i]));
         }
     }
 
 
     while(!ops.empty()) {
-        GeneralTypeToken right = st.top(); st.pop();
-        GeneralTypeToken left = st.top(); st.pop();
+        GeneralTypeToken left;
+        GeneralTypeToken right;
+        if(st.top().size() == 1) {
+            right = st.top().front(); st.pop();
+        }
+        else {
+            lexed_tokens l(1);
+            for(auto i : st.top()) {
+                l[0].source.push_back(i.to_string());
+            }
+            ++global::in_compound;
+            right = run_lexed(l,false,false,-1,{},"",false,true);
+            --global::in_compound;
+            st.pop();
+        }
+        if(st.top().size() == 1) {
+            left = st.top().front(); st.pop();
+        }
+        else {
+            lexed_tokens l(1);
+            for(auto i : st.top()) {
+                l[0].source.push_back(i.to_string());
+            }
+            ++global::in_compound;
+            left = run_lexed(l,false,false,-1,{},"",false,true);
+            ++global::in_compound;
+            st.pop();
+        }
 
         Operator* roper;
         roper = get_operator(ops.top(),left.type,right.type);
@@ -146,18 +204,27 @@ Variable MeowScript::parse_expression(std::string str) {
             throw errors::MWSMessageException{"No overload of operator \"" + ops.top() + "\" matches the types: " + general_t2token(left.type).content + " | " + general_t2token(right.type).content,global::get_line()};
         }
 
-        st.push(roper->parse(left,right));
+        st.push({roper->parse(left,right)});
         ops.pop();
     }
     --global::in_expression;
     if(st.size() != 1) {
+        std::cout << "boo\n";
         throw errors::MWSMessageException{"Invalid expression: " + str,global::get_line()};
     }
-
-    if(st.top().type == General_type::VOID) {
+    if(st.top().size() != 1) {
+        lexed_tokens l(1);
+        for(auto i : st.top()) {
+            l[0].source.push_back(i.to_string());
+        }
+        ++global::in_compound;
+        st.top() = {run_lexed(l,false,false,-1,{},"",false,true)};
+        --global::in_compound;
+    }
+    if(st.top().front().type == General_type::VOID) {
         return Variable(Variable::Type::VOID);
     }
-    return st.top().to_variable();
+    return st.top().front().to_variable();
 }
 
 bool MeowScript::is_expression(std::string str) {
@@ -177,8 +244,6 @@ bool MeowScript::is_expression(std::string str) {
     }
 
     std::vector<Token> lexed;
-    bool look_for_opers = false;
-    std::string operator_carry;
     // Try to get the operators:
     for(size_t i = 0; i < vec.size(); ++i) {
         if(vec[i].in_quotes || vec[i].content.size() != 1 || !is_valid_operator_char(vec[i].content[0]) || lexed.size() == 0) {
@@ -196,45 +261,32 @@ bool MeowScript::is_expression(std::string str) {
     }
 
     if(lexed.size() == 1) {
-        return get_type(lexed[0]) != General_type::COMMAND;
+        return get_type(lexed[0],car_Command) != General_type::COMMAND;
     }
 
+    bool f_op = false;
+    bool f_any_ops = false;
     std::stack<std::string> ops;
-    int st = 0;
+    std::stack<std::vector<std::string>> st;
+    st.push({});
     for(size_t i = 0; i < lexed.size(); ++i) {
-        if(get_type(lexed[i]) == General_type::EXPRESSION) {
-            ++st;
-        }
-        else if(!lexed[i].in_quotes && is_operator(lexed[i].content)) {
-            if(st == 0) {
+        if(!lexed[i].in_quotes && is_operator(lexed[i].content)) {
+            if(st.empty() || st.top().empty()) {
                 return false;
             }
-            auto op = operators[lexed[i].content];
-            while(!ops.empty() && operators[ops.top()][0].priority >= op[0].priority) {
-                --st;
-                if(!is_operator(ops.top())) {
-                    return false;
-                }
+            while(!ops.empty()) {
+                st.pop(); 
                 ops.pop();
             }
             ops.push(lexed[i].content);
+            f_op = true;
+            f_any_ops = true;
         }
         else {
-            ++st;
+            if(f_op) { st.push({}); f_op = false; }
+            st.top().push_back(lexed[i].content);
         }
     }
 
-
-    while(!ops.empty()) {
-        --st;
-        if(!is_operator(ops.top())) {
-            return false;
-        }
-        ops.pop();
-    }
-    if(st != 1) {
-        return false;
-    }
-
-    return true;
+    return st.size() == ops.size()+1 && /*st.top().size() == 1 &&*/ f_any_ops;
 }
