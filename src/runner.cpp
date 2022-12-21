@@ -585,9 +585,6 @@ Variable MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool save_sco
             return ret;
         }
         else if(ret.type != Variable::Type::VOID && ret.type != Variable::Type::UNKNOWN) {
-            if(pass_return_down) {
-                return ret;
-            }
             std::cout << ret.to_string() << "\n";
         }
     }

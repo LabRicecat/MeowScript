@@ -174,7 +174,7 @@ Variable MeowScript::parse_expression(std::string str) {
             }
             ++global::in_compound;
             left = run_lexed(l,false,false,-1,{},"",false,true);
-            ++global::in_compound;
+            --global::in_compound;
             st.pop();
         }
 
