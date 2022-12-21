@@ -31,10 +31,6 @@ Variable MeowScript::parse_expression(std::string str) {
     str.erase(str.begin());
     str.erase(str.begin()+str.size()-1);
 
-    if(str == "print (1+1)") {
-        std::cout << "c\n";
-    }
-
     auto lines = lex_text(str);
     std::vector<Token> vec;
     // To make it one line
