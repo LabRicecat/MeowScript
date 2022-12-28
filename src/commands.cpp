@@ -63,15 +63,15 @@ Command* MeowScript::get_command(std::string name) {
 Command* MeowScript::get_command_overload(std::string name,std::vector<Token> tokens) {
     for(auto& i : *get_command_list()) {
         if(i.name == name) {
-            if(tokens.size() != i.args.size() && !(i.args.size() != 0 && i.args.back().matches(car_Ongoing) && i.args.back() != car_Any)) {
+            if(tokens.size() != i.args.size() && !(i.args.size() != 0 && i.args.back().matches(car_Ongoing) && i.args.back() != car_Any && tokens.size() >= i.args.size()-1)) {
                 continue;
             }
             bool failed = false;
             for(size_t j = 0; j < i.args.size(); ++j) {
-                auto identf = get_type(tokens[j],i.args[j]);
                 if(i.args[j] == car_Ongoing) {
                     return &i;
                 }
+                auto identf = get_type(tokens[j],i.args[j]);
                 if(!i.args[j].matches(identf)) {
                     failed = true;
                     break;
@@ -529,7 +529,8 @@ static std::vector<Command> commandlist = {
         if(args[0].type == General_type::MODULE && is_loaded_module(args[0].to_string())) {
             Module* mod = get_module(args[0].to_string());
             mod->enabled = true;
-            mod->on_load(mod);
+            if(mod->on_load != nullptr)
+                mod->on_load(mod);
         }
         else if(is_loadable_module(args[0].to_string())) {
             load_module(args[0].to_string() + MEOWSCRIPT_SHARED_OBJECT_EXT);

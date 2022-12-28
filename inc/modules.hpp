@@ -29,7 +29,7 @@ struct Module {
 
     bool enabled = true;
 
-    void(*on_load)(Module* self);
+    void(*on_load)(Module* self) = nullptr;
 };
 
 inline std::vector<Module> modules;

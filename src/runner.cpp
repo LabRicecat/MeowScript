@@ -64,7 +64,7 @@ Variable MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool save_sco
         std::string name = lines[i].source[0];
 
         std::string str_line = tools::line_to_string(lines[i].source);
-        
+
         if(identf_line.front() == General_type::COMMAND) {
             if(!valid_command_call(lines[i].source) && valid_expression_line(lines[i].source)) {
                 goto PARSE_EXPRESSION_LINE; // i know gotos are ugly, but it's the cleanest way, i swear
@@ -183,7 +183,8 @@ Variable MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool save_sco
                 for(auto i : args) {
                     err_msg += var_t2token(i.type).content + ",";
                 }
-                err_msg.pop_back();
+                if(err_msg.size() != 0)
+                    err_msg.pop_back();
                 throw errors::MWSMessageException{err_msg + "]",global::get_line()};
             }
             Function fun = *funptr;

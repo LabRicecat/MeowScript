@@ -244,20 +244,28 @@ public:
                 }
                 std::time_t t = std::time(0);
                 std::tm* now = std::localtime(&t);
-                if(alist[0].source.content == "hours") {
+                if(alist[0].source.content == "hours" || alist[0].source.content == "h") {
                     int ret = now->tm_hour;
                     return ret;
                 }
-                else if(alist[0].source.content == "minutes") {
+                else if(alist[0].source.content == "minutes" || alist[0].source.content == "m") {
                     int ret = now->tm_min;
                     return ret;
                 }
-                else if(alist[0].source.content == "seconds") {
+                else if(alist[0].source.content == "seconds" || alist[0].source.content == "s") {
                     int ret = now->tm_sec;
                     return ret;
                 }
+                else if(alist[0].source.content == "month" || alist[0].source.content == "mo") {
+                    int ret = now->tm_mon;
+                    return ret;
+                }
+                else if(alist[0].source.content == "year" || alist[0].source.content == "y") {
+                    int ret = now->tm_year + 1900;
+                    return ret;
+                }
                 else {
-                    throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: [\"hours\",\"minutes\",\"seconds\"]\n\t- But got: " + alist[0].to_string(),global::get_line()};
+                    throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: [\"year\",\"month\",\"hours\",\"minutes\",\"seconds\"]\n\t- But got: " + alist[0].to_string(),global::get_line()};
                 }
                 return general_null;
             }}

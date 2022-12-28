@@ -54,10 +54,14 @@ public:
         ).add_command(
             {"sqrt",
             {
-                car_Number | car_PlaceHolderAble
+                car_ArgumentList
             },
             [](std::vector<GeneralTypeToken> args)->Variable {
-                auto v = tools::check4placeholder(args[0]);
+                argument_list alist = tools::parse_argument_list(args[0]);
+                if(alist.size() != 1) {
+                    throw errors::MWSMessageException{"Too many/few arguments for command: sqrt\n\t- Expected: 1\n\t- But got: " + std::to_string(alist.size()) ,global::get_line()};
+                }
+                auto v = tools::check4placeholder(alist[0]);
                 if(v.type != General_type::NUMBER) {
                     throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\t- But got: " + general_t2token(v.type).content,global::get_line()};
                 }
@@ -66,10 +70,14 @@ public:
         ).add_command(
             {"floor",
             {
-                car_Number | car_PlaceHolderAble
+                car_ArgumentList
             },
             [](std::vector<GeneralTypeToken> args)->Variable {
-                auto v = tools::check4placeholder(args[0]);
+                argument_list alist = tools::parse_argument_list(args[0]);
+                if(alist.size() != 1) {
+                    throw errors::MWSMessageException{"Too many/few arguments for command: floor\n\t- Expected: 1\n\t- But got: " + std::to_string(alist.size()) ,global::get_line()};
+                }
+                auto v = tools::check4placeholder(alist[0]);
                 if(v.type != General_type::NUMBER) {
                     throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\t- But got: " + general_t2token(v.type).content,global::get_line()};
                 }
@@ -78,10 +86,14 @@ public:
         ).add_command(
             {"ceil",
             {
-                car_Number | car_PlaceHolderAble
+                car_ArgumentList
             },
             [](std::vector<GeneralTypeToken> args)->Variable {
-                auto v = tools::check4placeholder(args[0]);
+                argument_list alist = tools::parse_argument_list(args[0]);
+                if(alist.size() != 1) {
+                    throw errors::MWSMessageException{"Too many/few arguments for command: ceil\n\t- Expected: 1\n\t- But got: " + std::to_string(alist.size()) ,global::get_line()};
+                }
+                auto v = tools::check4placeholder(alist[0]);
                 if(v.type != General_type::NUMBER) {
                     throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\t- But got: " + general_t2token(v.type).content,global::get_line()};
                 }
@@ -141,34 +153,50 @@ public:
         ).add_command(
             {"abs",
             {
-                car_Number | car_PlaceHolderAble
+                car_ArgumentList
             },
             [](std::vector<GeneralTypeToken> args)->Variable {
-                auto v = tools::check4placeholder(args[0]);
+                argument_list alist = tools::parse_argument_list(args[0]);
+                if(alist.size() != 1) {
+                    throw errors::MWSMessageException{"Too many/few arguments for command: abs\n\t- Expected: 1\n\t- But got: " + std::to_string(alist.size()) ,global::get_line()};
+                }
+                auto v = tools::check4placeholder(alist[0]);
                 if(v.type != General_type::NUMBER) {
                     throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\t- But got: " + general_t2token(v.type).content,global::get_line()};
                 }
                 return std::abs(v.to_variable().storage.number);
             }}
         ).add_command(
-            {"log10",
+            {"log",
             {
-                car_Number | car_PlaceHolderAble
+                car_ArgumentList
             },
             [](std::vector<GeneralTypeToken> args)->Variable {
-                auto v = tools::check4placeholder(args[0]);
+                argument_list alist = tools::parse_argument_list(args[0]);
+                if(alist.size() != 1) {
+                    throw errors::MWSMessageException{"Too many/few arguments for command: log\n\t- Expected: 2\n\t- But got: " + std::to_string(alist.size()) ,global::get_line()};
+                }
+                auto v = tools::check4placeholder(alist[0]);
                 if(v.type != General_type::NUMBER) {
                     throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\t- But got: " + general_t2token(v.type).content,global::get_line()};
                 }
-                return std::log10(v.to_variable().storage.number);
+                auto base = tools::check4placeholder(alist[0]);
+                if(base.type != General_type::NUMBER) {
+                    throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\t- But got: " + general_t2token(base.type).content,global::get_line()};
+                }
+                return std::log(v.to_variable().storage.number) / std::log(base.to_variable().storage.number);
             }}
         ).add_command(
             {"int",
             {
-                car_Number | car_PlaceHolderAble
+                car_ArgumentList
             },
             [](std::vector<GeneralTypeToken> args)->Variable {
-                auto v = tools::check4placeholder(args[0]);
+                argument_list alist = tools::parse_argument_list(args[0]);
+                if(alist.size() != 1) {
+                    throw errors::MWSMessageException{"Too many/few arguments for command: int\n\t- Expected: 1\n\t- But got: " + std::to_string(alist.size()) ,global::get_line()};
+                }
+                auto v = tools::check4placeholder(alist[0]);
                 if(v.type != General_type::NUMBER) {
                     throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\t- But got: " + general_t2token(v.type).content,global::get_line()};
                 }
@@ -177,15 +205,18 @@ public:
         ).add_command(
             {"round",
             {
-                car_Number | car_PlaceHolderAble,
-                car_Number | car_PlaceHolderAble
+                car_ArgumentList
             },
             [](std::vector<GeneralTypeToken> args)->Variable {
-                auto v = tools::check4placeholder(args[0]);
+                argument_list alist = tools::parse_argument_list(args[0]);
+                if(alist.size() != 2) {
+                    throw errors::MWSMessageException{"Too many/few arguments for command: round\n\t- Expected: 2\n\t- But got: " + std::to_string(alist.size()) ,global::get_line()};
+                }
+                auto v = tools::check4placeholder(alist[0]);
                 if(v.type != General_type::NUMBER) {
                     throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\t- But got: " + general_t2token(v.type).content,global::get_line()};
                 }
-                auto rto = tools::check4placeholder(args[1]);
+                auto rto = tools::check4placeholder(alist[1]);
                 if(rto.type != General_type::NUMBER) {
                     throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\t- But got: " + general_t2token(rto.type).content,global::get_line()};
                 }
@@ -193,55 +224,6 @@ public:
                 Variable rtov = rto.to_variable().storage.number;
                 vv.storage.number *= pow(10,rtov.storage.number);
                 vv.storage.number += 0.5;
-                vv.storage.number = (int)vv.storage.number;
-                vv.storage.number /= pow(10,rtov.storage.number);
-
-                return vv.storage.number;
-            }}
-        ).add_command(
-            {"ceil",
-            {
-                car_Number | car_PlaceHolderAble,
-                car_Number | car_PlaceHolderAble
-            },
-            [](std::vector<GeneralTypeToken> args)->Variable {
-                auto v = tools::check4placeholder(args[0]);
-                if(v.type != General_type::NUMBER) {
-                    throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\t- But got: " + general_t2token(v.type).content,global::get_line()};
-                }
-                auto rto = tools::check4placeholder(args[1]);
-                if(rto.type != General_type::NUMBER) {
-                    throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\t- But got: " + general_t2token(rto.type).content,global::get_line()};
-                }
-                Variable vv = v.to_variable();
-                Variable rtov = rto.to_variable().storage.number;
-                vv.storage.number *= pow(10,rtov.storage.number);
-                if((int)vv.storage.number*10 % 10 != 0) {
-                    vv.storage.number += 1;
-                }
-                vv.storage.number = (int)vv.storage.number;
-                vv.storage.number /= pow(10,rtov.storage.number);
-
-                return vv.storage.number;
-            }}
-        ).add_command(
-            {"floor",
-            {
-                car_Number | car_PlaceHolderAble,
-                car_Number | car_PlaceHolderAble
-            },
-            [](std::vector<GeneralTypeToken> args)->Variable {
-                auto v = tools::check4placeholder(args[0]);
-                if(v.type != General_type::NUMBER) {
-                    throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\t- But got: " + general_t2token(v.type).content,global::get_line()};
-                }
-                auto rto = tools::check4placeholder(args[1]);
-                if(rto.type != General_type::NUMBER) {
-                    throw errors::MWSMessageException{"Invalid argument!\n\t- Expected: Number\n\t- But got: " + general_t2token(rto.type).content,global::get_line()};
-                }
-                Variable vv = v.to_variable();
-                Variable rtov = rto.to_variable().storage.number;
-                vv.storage.number *= pow(10,rtov.storage.number);
                 vv.storage.number = (int)vv.storage.number;
                 vv.storage.number /= pow(10,rtov.storage.number);
 
