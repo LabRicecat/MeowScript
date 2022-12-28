@@ -326,7 +326,7 @@ static std::vector<Command> commandlist = {
             car_Name | car_Function,
             car_ParameterList, 
             car_Operator, // =>
-            car_Compound | car_Expression | car_Name | car_String | car_Number | car_Ongoing
+            car_Ongoing
         },
     [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_CAN_BE_IN_STRUCT()

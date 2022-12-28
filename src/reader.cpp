@@ -714,8 +714,10 @@ std::vector<Line> MeowScript::lex_text(std::string source) {
     ;
     auto lexed = lexer.lex(source);
     if(!lexer) {
-        std::cout << source << std::endl;
-        throw 12;
+        if(lexed.size() != 0)
+            throw errors::MWSMessageException{"Brace missmatch at " + std::to_string(lexed.back().line),0};
+        else 
+            throw errors::MWSMessageException{"Brace missmatch!",0};
     }
     ret.push_back(Line{{},1});
     for(auto i : lexed) {
