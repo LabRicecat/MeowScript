@@ -26,7 +26,7 @@ argument_list MeowScript::tools::parse_argument_list(Token context) {
         for(auto j : i.source) 
             line.push_back(j);
     
-    std::vector<GeneralTypeToken> last;
+    std::vector<Token> last;
     bool found_sth = true;
 
     for(auto i : line) {
@@ -39,7 +39,8 @@ argument_list MeowScript::tools::parse_argument_list(Token context) {
             else {
                 std::string tks;
                 for(auto i : last) {
-                    tks += i.to_string() + " ";
+                    if(i.in_quotes) i.content = "\"" + i.content + "\"";
+                    tks += i.content + " ";
                 }                
                 tks.pop_back();
                 ret.push_back(GeneralTypeToken{"(" + tks + ")",car_Expression});
@@ -56,7 +57,8 @@ argument_list MeowScript::tools::parse_argument_list(Token context) {
         else {
             std::string tks;
             for(auto i : last) {
-                tks += i.to_string() + " ";
+                if(i.in_quotes) i.content = "\"" + i.content + "\"";
+                tks += i.content + " ";
             }                
             tks.pop_back();
             ret.push_back(GeneralTypeToken{"{" + tks + "}",car_Compound});
