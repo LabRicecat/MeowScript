@@ -14,19 +14,7 @@ struct Variable;
 struct List {
     std::vector<Variable> elements;
 
-    static inline bool valid_list(Token context) {
-        if(context.content == "" || context.in_quotes || !brace_check(context,'[',']')) {
-            return false;
-        }
-        context.content.erase(context.content.begin());
-        context.content.erase(context.content.begin()+context.content.size()-1);
-        if(context.content.size() == 0) {
-            return true;
-        }
-        
-        context.content = "(" + context.content + ")";
-        return is_valid_argumentlist(context.content);
-    }
+    static bool valid_list(Token context);
 
     std::string to_string() const;
 };

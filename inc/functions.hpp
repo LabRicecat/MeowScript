@@ -21,6 +21,7 @@ struct ArgRule {
     bool applies(Variable var) const;
 
     bool operator==(ArgRule r);
+    bool operator!=(ArgRule r) { return !operator==(r); }
 };
 
 using RuleSet = std::vector<ArgRule>;
@@ -96,6 +97,7 @@ public:
         this->file = f.file;
         this->return_type = f.return_type;
         this->params = f.params;
+    
     }
 };
 

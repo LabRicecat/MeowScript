@@ -422,10 +422,10 @@ static std::vector<Command> commandlist = {
 
         current_scope()->last_if_result = (res.storage.number == 1);
         if(res.storage.number == 1) {
-            auto ret = run_text(args[1].source.content,false,false,-1,{},"",true);
-            if(global::runner_should_return != 0) {
-                return ret;
-            }
+            ++global::in_compound;
+            auto ret = run_text(args[1].source.content,false,false,-1,{},"",false,true);
+            --global::in_compound;
+            return ret;
         }
         return general_null;
     }},
@@ -1129,7 +1129,10 @@ OUT:
                 if(rt.matches(val)) {
                     lexed_tokens tks(1);
                     tks[0].source = exec;
-                    return run_lexed(tks,false,false,-1,{},"",true,true);
+                    ++global::in_compound;
+                    Variable ret = run_lexed(tks,false,false,-1,{},"",false,true);
+                    --global::in_compound;
+                    return ret;
                 }
             }
             else {
@@ -1146,14 +1149,20 @@ OUT:
                     if(res.type == Variable::Type::Number && res.storage.number == 0) {
                         lexed_tokens tks(1);
                         tks[0].source = exec;
-                        return run_lexed(tks,false,false,-1,{},"",true,true);
+                        ++global::in_compound;
+                        Variable ret = run_lexed(tks,false,false,-1,{},"",false,true);
+                        --global::in_compound;
+                        return ret;
                     }
                 }
                 else {
                     if(val == v) {
                         lexed_tokens tks(1);
                         tks[0].source = exec;
-                        return run_lexed(tks,false,false,-1,{},"",true,true);
+                        ++global::in_compound;
+                        Variable ret = run_lexed(tks,false,false,-1,{},"",false,true);
+                        --global::in_compound;
+                        return ret;
                     }
                 }
             }
@@ -1161,7 +1170,10 @@ OUT:
         if(!elseexec.empty()) {
             lexed_tokens tks(1);
             tks[0].source = elseexec;
-            return run_lexed(tks,false,false,-1,{},"",true,true);
+            ++global::in_compound;
+            Variable ret = run_lexed(tks,false,false,-1,{},"",false,true);
+            --global::in_compound;
+            return ret;
         }
         return general_null;
     }},

@@ -20,6 +20,7 @@ Parameter::Parameter(const Parameter& p) {
     this->name = p.name;
     this->struct_name = p.struct_name;
     this->literal_value = p.literal_value;
+    this->ruleset = p.ruleset;
     if(p.m_fntmpl != nullptr) {
         if(this->m_fntmpl == nullptr) this->m_fntmpl = std::make_unique<Function>();
         *this->m_fntmpl = *p.m_fntmpl;
@@ -142,12 +143,10 @@ bool MeowScript::same_ruleset(RuleSet ra, RuleSet rb) {
     for(size_t i = 0; i < ra.size(); ++i) {
         bool f = false;
         for(size_t j = 0; j < rb.size(); ++j) {
-            if(ra[i] == rb[j]) {
-                f = true;
-                break;
+            if(ra[i] != rb[j]) {
+                return false;
             }
         }
-        if(!f) return false;
     }
     return true;
 }

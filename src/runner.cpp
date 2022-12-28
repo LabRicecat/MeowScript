@@ -334,10 +334,10 @@ Variable MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool save_sco
             }
 
             if(identf_line.size() < 3 || lines[i].source[1].content != ".") {
-                throw errors::MWSMessageException{"Invalid string-method call!\n\t- Expected: string.method <args>...",global::get_line()};
+                throw errors::MWSMessageException{"Invalid list-method call!\n\t- Expected: list.method <args>...",global::get_line()};
             }
             auto idf_first = identf_line.front();
-            identf_line.erase(identf_line.begin()); // string
+            identf_line.erase(identf_line.begin()); // list
             identf_line.erase(identf_line.begin()); // .
 
             Method<List>* method = get_list_method(lines[i].source[2].content);

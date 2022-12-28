@@ -8,6 +8,7 @@
 #include "../inc/modules.hpp"
 #include "../inc/scopes.hpp"
 #include "../inc/expressions.hpp"
+#include "../inc/reader.hpp"
 
 #include <algorithm>
 
@@ -404,6 +405,39 @@ bool matches(std::vector<Variable::Type> types, General_type gtype) {
         }
     }
     return false;
+}
+
+bool MeowScript::List::valid_list(Token context) {
+    if(context.content == "" || context.in_quotes || !brace_check(context,'[',']')) {
+        return false;
+    }
+    context.content.erase(context.content.begin());
+    context.content.erase(context.content.begin()+context.content.size()-1);
+    if(context.content.size() == 0) {
+        return true;
+    }
+        
+    auto l = lex_text(context.content);
+    std::vector<Token> tokens;
+    for(auto i : l)
+        for(auto j : i.source)
+            tokens.push_back(j);
+
+    std::string last;
+    bool found_con = false;
+
+    for(auto i : tokens) {
+        if(i.content == "," && !i.in_quotes) {
+            if(!found_con) return false;
+            found_con = false;
+        }
+        else {
+            if(found_con) return false;
+            found_con = true;
+        }
+    }
+    
+    return true;
 }
 
 std::string MeowScript::List::to_string() const {

@@ -26,32 +26,40 @@ argument_list MeowScript::tools::parse_argument_list(Token context) {
         for(auto j : i.source) 
             line.push_back(j);
     
-    GeneralTypeToken last = general_null;
-    bool found_sl = true;
+    std::vector<GeneralTypeToken> last;
+    bool found_sth = true;
 
     for(auto i : line) {
         if(i.content == "," && !i.in_quotes) {
-            if(last == general_null) {
+            if(last.empty()) {
                 return argument_list();
             }
-            ret.push_back(last);
-            last = general_null;
-            found_sl = true;
-        }
-        else if(found_sl) {
-            last = i;
-            found_sl = false;
+            if(last.size() == 1)
+                ret.push_back(last[0]);
+            else {
+                std::string tks;
+                for(auto i : last) {
+                    tks += i.to_string() + " ";
+                }                
+                tks.pop_back();
+                ret.push_back(GeneralTypeToken{"(" + tks + ")",car_Expression});
+            }
+            last.clear();
         }
         else {
-            return argument_list();
+            last.push_back(i);
         }
     }
-    if(last != general_null) {
-        if(!found_sl) {
-            ret.push_back(last);
-        }
+    if(!last.empty()) {
+        if(last.size() == 1)
+            ret.push_back(last[0]);
         else {
-            return argument_list();
+            std::string tks;
+            for(auto i : last) {
+                tks += i.to_string() + " ";
+            }                
+            tks.pop_back();
+            ret.push_back(GeneralTypeToken{"{" + tks + "}",car_Compound});
         }
     }
 

@@ -276,27 +276,18 @@ bool MeowScript::is_valid_argumentlist(Token context) {
         for(auto j : i.source) 
             line.push_back(j);
     
-    GeneralTypeToken last = general_null;
-    bool found_sl = true;
+    int last = 0;
 
     for(auto i : line) {
         if(i.content == "," && !i.in_quotes) {
-            if(last == general_null) {
+            if(last == 0) {
                 return false;
             }
-            last = general_null;
-            found_sl = true;
-        }
-        else if(found_sl) {
-            last = i;
-            found_sl = false;
+            last = 0;
         }
         else {
-            return false;
+            ++last;
         }
-    }
-    if(last != general_null && found_sl) {
-        return false;
     }
 
     return true;
