@@ -38,6 +38,8 @@ namespace tools {
     Token remove_uness_decs(Token num, bool to_int);
 
     Token until_newline(std::vector<Token> tks);
+
+    std::string line_to_string(std::vector<Token> tokens);
 }
 
 MEOWSCRIPT_HEADER_END

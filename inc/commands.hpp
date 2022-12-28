@@ -101,6 +101,9 @@ Command* get_command(std::string name);
 
 Command* get_command_overload(std::string name,std::vector<Token> tokens);
 
+bool valid_command_call(std::vector<Token> line);
+bool valid_expression_line(std::vector<Token> line);
+
 MEOWSCRIPT_HEADER_END
 
 #endif

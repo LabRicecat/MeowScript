@@ -84,6 +84,51 @@ Command* MeowScript::get_command_overload(std::string name,std::vector<Token> to
     return nullptr;
 }
 
+bool MeowScript::valid_command_call(std::vector<Token> line) {
+    if(line.empty()) return false;
+    if(line[0].in_quotes) return false;
+    auto cp = line;
+    std::string name = line[0].content;
+    cp.erase(cp.begin());
+    Command* command = get_command_overload(name,cp);
+
+    std::vector<GeneralTypeToken> args;
+    if(command == nullptr) {
+        return false;
+    }
+    if((command->args.size() == 0 || !(command->args.back().matches(car_Ongoing))) && command->args.size() != line.size()-1) {
+        return false;
+    }
+
+    bool f_ongoing = false;
+    for(size_t j = 0; j < cp.size(); ++j) {
+        if(f_ongoing) {
+            args.push_back(GeneralTypeToken(cp[j]));
+        }
+        else {
+            auto identf = get_type(cp[j],command->args[j]);
+            if(command->args[j].matches(car_Ongoing)) {
+                f_ongoing = true;
+                args.push_back(GeneralTypeToken(cp[j]));
+                continue;
+            }
+            if(!command->args[j].matches(identf)) {
+                return false;
+            }
+            else {
+                args.push_back(GeneralTypeToken(cp[j],command->args[j]));
+            }
+        }
+    }
+
+    return true;
+}
+
+bool MeowScript::valid_expression_line(std::vector<Token> line) {
+    std::string str_line = tools::line_to_string(line);
+    return is_expression("(" + str_line + ")");
+}
+
 static std::vector<Command> commandlist = {
     {"new",
         {

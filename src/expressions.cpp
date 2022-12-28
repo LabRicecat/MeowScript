@@ -66,7 +66,7 @@ Variable MeowScript::parse_expression(std::string str) {
     ++global::in_expression;
     bool f_op = false;
     std::stack<std::string> ops;
-    std::stack<std::vector<GeneralTypeToken>> st;
+    std::stack<std::vector<Token>> st;
     st.push({});
     for(size_t i = 0; i < lexed.size(); ++i) {
         if(!lexed[i].in_quotes && is_operator(lexed[i].content)) {
@@ -84,7 +84,8 @@ Variable MeowScript::parse_expression(std::string str) {
                 else {
                     lexed_tokens l(1);
                     for(auto i : st.top()) {
-                        l[0].source.push_back(i.to_string());
+                        if(i.in_quotes) i = "\"" + i.content + "\"";
+                        l[0].source.push_back(i.content);
                     }
                     ++global::in_compound;
                     right = run_lexed(l,false,false,-1,{},"",false,true);
@@ -97,7 +98,8 @@ Variable MeowScript::parse_expression(std::string str) {
                 else {
                     lexed_tokens l(1);
                     for(auto i : st.top()) {
-                        l[0].source.push_back(i.to_string());
+                        if(i.in_quotes) i = "\"" + i.content + "\"";
+                        l[0].source.push_back(i.content);
                     }
                     ++global::in_compound;
                     left = run_lexed(l,false,false,-1,{},"",false,true);
@@ -130,8 +132,15 @@ Variable MeowScript::parse_expression(std::string str) {
                     --global::in_expression;
                     throw errors::MWSMessageException{"No overload of operator \"" + ops.top() + "\" matches the types: " + general_t2token(left.type).content + " | " + general_t2token(right.type).content,global::get_line()};
                 }
-
-                st.push({roper->parse(left,right)});
+                auto parsed = roper->parse(left,right);
+                Token next;
+                if(parsed.type == Variable::Type::String) {
+                    next.in_quotes = true;
+                    next.content = parsed.storage.string;
+                }
+                else if(parsed.type == Variable::Type::VOID) next.content = "";
+                else next = parsed.to_string();
+                st.push({next});
                 ops.pop();
             }
             ops.push(lexed[i].content);
@@ -139,7 +148,7 @@ Variable MeowScript::parse_expression(std::string str) {
         }
         else {
             if(f_op) { st.push({}); f_op = false; }
-            st.top().push_back(GeneralTypeToken(lexed[i]));
+            st.top().push_back(lexed[i]);
         }
     }
 
@@ -153,7 +162,8 @@ Variable MeowScript::parse_expression(std::string str) {
         else {
             lexed_tokens l(1);
             for(auto i : st.top()) {
-                l[0].source.push_back(i.to_string());
+                if(i.in_quotes) i = "\"" + i.content + "\"";
+                l[0].source.push_back(i.content);
             }
             ++global::in_compound;
             right = run_lexed(l,false,false,-1,{},"",false,true);
@@ -166,7 +176,8 @@ Variable MeowScript::parse_expression(std::string str) {
         else {
             lexed_tokens l(1);
             for(auto i : st.top()) {
-                l[0].source.push_back(i.to_string());
+                if(i.in_quotes) i = "\"" + i.content + "\"";
+                l[0].source.push_back(i.content);
             }
             ++global::in_compound;
             left = run_lexed(l,false,false,-1,{},"",false,true);
@@ -200,7 +211,15 @@ Variable MeowScript::parse_expression(std::string str) {
             throw errors::MWSMessageException{"No overload of operator \"" + ops.top() + "\" matches the types: " + general_t2token(left.type).content + " | " + general_t2token(right.type).content,global::get_line()};
         }
 
-        st.push({roper->parse(left,right)});
+        auto parsed = roper->parse(left,right);
+        Token next;
+        if(parsed.type == Variable::Type::String) {
+            next.in_quotes = true;
+            next.content = parsed.storage.string;
+        }
+        else if(parsed.type == Variable::Type::VOID) next.content = "";
+        else next = parsed.to_string();
+        st.push({next});
         ops.pop();
     }
     --global::in_expression;
@@ -211,16 +230,25 @@ Variable MeowScript::parse_expression(std::string str) {
     if(st.top().size() != 1) {
         lexed_tokens l(1);
         for(auto i : st.top()) {
-            l[0].source.push_back(i.to_string());
+            if(i.in_quotes) i = "\"" + i.content + "\"";
+            l[0].source.push_back(i.content);
         }
         ++global::in_compound;
-        st.top() = {run_lexed(l,false,false,-1,{},"",false,true)};
+        auto parsed = run_lexed(l,false,false,-1,{},"",false,true);
+        Token next;
+        if(parsed.type == Variable::Type::String) {
+            next.in_quotes = true;
+            next.content = parsed.storage.string;
+        }
+        else if(parsed.type == Variable::Type::VOID) next.content = "";
+        else next = parsed.to_string();
+        st.top() = {next};
         --global::in_compound;
     }
-    if(st.top().front().type == General_type::VOID) {
+    if(st.top().front() == "") {
         return Variable(Variable::Type::VOID);
     }
-    return st.top().front().to_variable();
+    return GeneralTypeToken{st.top().front()}.to_variable();
 }
 
 bool MeowScript::is_expression(std::string str) {

@@ -446,3 +446,29 @@ Token MeowScript::tools::until_newline(std::vector<Token> tks) {
     ret.content.pop_back();
     return ret;
 }
+
+std::string MeowScript::tools::line_to_string(std::vector<Token> tokens) {
+    std::string str_line;
+    for(auto k : tokens) {
+        if(k.in_quotes) {
+            str_line += " \"" + k.content + "\"";
+        }
+        else if(in_any_braces(k)) {
+            str_line += " " + k.content;
+        }
+        else {
+            for(size_t j = 0; j < k.content.size(); ++j) {
+                if(k.content[j] == '\"') {
+                    k.content.insert(k.content.begin() + j,'\\');
+                    ++j;
+                }
+            }
+            if(k.in_quotes) {
+                k = "\"" + k.content + "\"";
+            }
+            str_line += " " + k.content;
+        }
+    }
+    str_line = tools::remove_unneeded_chars(str_line);  
+    return str_line;
+}

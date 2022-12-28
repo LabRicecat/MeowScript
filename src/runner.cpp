@@ -63,33 +63,12 @@ Variable MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool save_sco
 
         std::string name = lines[i].source[0];
 
-        std::string str_line;
-        for(auto k : lines[i].source) {
-            if(k.in_quotes) {
-                str_line += " \"" + k.content + "\"";
+        std::string str_line = tools::line_to_string(lines[i].source);
+        
+        if(identf_line.front() == General_type::COMMAND) {
+            if(!valid_command_call(lines[i].source) && valid_expression_line(lines[i].source)) {
+                goto PARSE_EXPRESSION_LINE; // i know gotos are ugly, but it's the cleanest way, i swear
             }
-            else if(in_any_braces(k)) {
-                str_line += " " + k.content;
-            }
-            else {
-                for(size_t j = 0; j < k.content.size(); ++j) {
-                    if(k.content[j] == '\"') {
-                        k.content.insert(k.content.begin() + j,'\\');
-                        ++j;
-                    }
-                }
-                if(k.in_quotes) {
-                    k = "\"" + k.content + "\"";
-                }
-                str_line += " " + k.content;
-            }
-        }
-        str_line = tools::remove_unneeded_chars(str_line);
-        if(get_type(str_line,car_Expression) != General_type::EXPRESSION && is_expression("(" + str_line + ")")) {
-            Variable result = parse_expression("(" + str_line + ")");
-            ret = result;
-        }
-        else if(identf_line.front() == General_type::COMMAND) {
             auto cp = lines[i].source;
             if(cp.size() != 0)
                 cp.erase(cp.begin());
@@ -136,6 +115,11 @@ Variable MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool save_sco
             }
 
             ret = command->run(args);
+        }
+        else if(is_expression("(" + str_line + ")")) {
+            PARSE_EXPRESSION_LINE:
+            Variable result = parse_expression("(" + str_line + ")");
+            ret = result;
         }
         else if(identf_line.front() == General_type::FUNCTION || (identf_line.front() == General_type::NAME && is_variable(lines[i].source[0]) && get_variable(lines[i].source[0])->type == Variable::Type::Function)) {
             bool shadow_return = false;
