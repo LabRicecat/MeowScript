@@ -258,10 +258,11 @@ std::string MeowScript::GeneralTypeToken::to_string() const {
         case General_type::LIST:
         case General_type::NUMBER:
         case General_type::DICTIONARY:
-        case General_type::FUNCTION:
             return to_variable().to_string();
         case General_type::VOID:
             throw errors::MWSMessageException{"Can't cast GeneralType VOID to STRING",global::get_line()};
+        case General_type::FUNCTION:
+            return source.content;
         default:
             return this->source.content;
     }

@@ -68,7 +68,7 @@ Command* MeowScript::get_command_overload(std::string name,std::vector<Token> to
             }
             bool failed = false;
             for(size_t j = 0; j < i.args.size(); ++j) {
-                if(i.args[j] == car_Ongoing) {
+                if(i.args[j].matches(car_Ongoing)) {
                     return &i;
                 }
                 auto identf = get_type(tokens[j],i.args[j]);
