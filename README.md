@@ -28,13 +28,13 @@ $ cd build
 $ cmake ..
 $ make
 ```
-Now you can run the interpreter!
+Now you can run the interpreter.
 ```
 $ meow-script --help
 ```
 
 ## How to use
-Get started with the official wiki to learn more about MeowScript!
+Read the wiki here.
 
 **[To the Wiki Pages!](https://github.com/SirWolfi/MeowScript/wiki)**
 
@@ -43,12 +43,6 @@ You can try out MeowScript live by using the `--shell` option or make a `main.mw
 ```
 $ meow-script main.mws
 ```
-
-## Questions?
-Visit the MeowScript forum to ask any questions you find along the way of using this project.  
-We are waiting for you!
-
-**[To the Discussion Page!](https://github.com/LabRicecat/MeowScript/discussions/categories/forum)**
 
 ## Credits
 Cute cat on the PC by DALL-E 2.0
