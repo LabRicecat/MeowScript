@@ -468,7 +468,7 @@ static std::vector<Command> commandlist = {
         current_scope()->last_if_result = (res.storage.number == 1);
         if(res.storage.number == 1) {
             ++global::in_compound;
-            auto ret = run_text(args[1].source.content,false,false,-1,{},"",false,true);
+            auto ret = run_text(args[1].source.content,false,false,-1,{},"",true,true);
             --global::in_compound;
             return ret;
         }
