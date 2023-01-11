@@ -748,7 +748,7 @@ static std::vector<Command> commandlist = {
         }
 
         if(!global::is_imported(pth)) {
-            global::imported_files.push_back(pth);
+            global::imported_files.push_back(pth.string());
             return run_file(pth.string(),true,false,-1,{},pth,false,true);   
         }
         return general_null;
