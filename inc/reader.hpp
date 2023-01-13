@@ -87,6 +87,7 @@ bool is_capsuled_number(Token text);
 bool all_numbers(Token text, bool allow_dot = true);
 bool is_valid_general_t(Token text);
 bool is_valid_var_t(Token text);
+bool is_operator_begin(std::string s);
 bool is_valid_operator_char(char ch);
 bool is_valid_operator_name(Token text);
 bool is_valid_name(Token text);
@@ -99,6 +100,7 @@ bool is_dictionary(Token context);
 bool is_literal_value(Token context);
 bool is_valid_function_return(Token context);
 bool in_any_braces(Token context);
+bool is_function_call(Token context);
 
 using lexed_tokens = std::vector<Line>;
 
@@ -129,6 +131,7 @@ enum class General_type {
     TYPENAME,
     UNKNOWN,
     VOID,
+    FUNCCALL,
     OUT_OF_RANGE
 };
 

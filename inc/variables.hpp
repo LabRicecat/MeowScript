@@ -17,20 +17,20 @@ struct GeneralTypeToken;
 
 struct Dictionary {
 private:
-    std::vector<GeneralTypeToken> i_keys;
+    std::vector<Variable> i_keys;
     std::vector<Variable> i_values;
 public:
-    const std::vector<std::pair<GeneralTypeToken,GeneralTypeToken>> pairs() const;
-    std::vector<std::pair<GeneralTypeToken,GeneralTypeToken>> pairs();
+    const std::vector<std::pair<Variable,Variable>> pairs() const;
+    std::vector<std::pair<Variable,Variable>> pairs();
 
-    const std::vector<GeneralTypeToken>& keys() const;
+    const std::vector<Variable>& keys() const;
     const std::vector<Variable>& values() const;
-    std::vector<GeneralTypeToken>& keys();
+    std::vector<Variable>& keys();
     std::vector<Variable>& values();
 
-    bool has(const GeneralTypeToken gtt) const;
+    bool has(const Variable key) const;
 
-    Variable& operator[](GeneralTypeToken gtt);
+    Variable& operator[](Variable key);
 };
 
 Dictionary dic_from_token(Token tk);
@@ -38,6 +38,16 @@ Token dic_to_token(Dictionary dic);
 
 struct Function;
 struct Variable {
+    struct FunctionCall { 
+        std::string func; 
+        argument_list arglist; 
+        bool shadow_return = false; 
+
+        // 0 => function name
+        // 1 => lambda
+        // 2 => var
+        int state = 0;
+    };
 private:
     struct stor_ {
         long double number = 0.0;
@@ -46,6 +56,7 @@ private:
         Dictionary dict;
         Object obj;
         std::vector<Function> func;
+        FunctionCall function_call;
     };
 public:
     enum class Type {
@@ -58,6 +69,7 @@ public:
         UNKNOWN, // Dont use
         ANY, // Also don't use
         VOID, // Guess what
+        FUNCCALL, // same here
         OUT_OF_RANGE,
     }type = Type::UNKNOWN;
     std::string struct_name;
@@ -69,6 +81,7 @@ public:
     Variable(long double number) {type = Type::Number; storage.number = number;}
     Variable(Dictionary dic) {type = Variable::Type::Dictionary; storage.dict = dic;}
     Variable(Object obj) {type = Variable::Type::Object; storage.obj = obj;}
+    Variable(FunctionCall funcc) {type = Variable::Type::FUNCCALL; storage.function_call = funcc; }
     Variable(Type ty) : type(ty) {}
     Variable(Function func);
     explicit Variable(std::string str) {type = Variable::Type::String; storage.string = str; storage.string.in_quotes = true;}
@@ -86,6 +99,14 @@ public:
     bool set(long double num);
     bool set(Variable var);
 
+    bool operator==(Variable v) const {
+        if(this->type == Variable::Type::Object && v.type == Variable::Type::Object) {
+            Object a = storage.obj;
+            return struct_matches(&a,&v.storage.obj);
+        }
+        return this->type == v.type && this->to_string() == v.to_string();
+    }
+
     bool operator==(Variable v) {
         if(this->type == Variable::Type::Object && v.type == Variable::Type::Object) {
             return struct_matches(&storage.obj,&v.storage.obj);
@@ -101,22 +122,11 @@ bool matches(Variable::Type type1, General_type type2);
 bool matches(std::vector<Variable::Type> types, General_type gtype);
 
 General_type var_t2general_t(Variable::Type type);
-
-template<typename Tleft,typename Tright>
-struct mws_either {
-    Tleft left;
-    Tright right;
-    bool ileft = true;
-
-    mws_either(Tleft l) {operator=(l);}
-    mws_either(Tright r) {operator=(r);}
-
-    void operator=(Tleft l) {left = l; ileft = true;}
-    void operator=(Tright r) {right = r; ileft = false;}
-};
+Variable::FunctionCall parse_function_call(Token context);
 
 struct GeneralTypeToken {
     Token source;
+    Variable::FunctionCall funccall;
     General_type type = General_type::VOID;
 
     GeneralTypeToken(Token context) {
@@ -127,6 +137,9 @@ struct GeneralTypeToken {
             source.content.erase(source.content.begin()+source.content.size()-1);
             source = tools::remove_unneeded_chars(source);
             source.in_quotes = true;
+        }
+        else if(type == General_type::FUNCCALL) {
+            funccall = parse_function_call(context);
         }
     }
     GeneralTypeToken(Variable var) {
@@ -157,6 +170,10 @@ struct GeneralTypeToken {
                 source = var.to_string();
                 type = General_type::FUNCTION;
                 break;
+            case Variable::Type::FUNCCALL:
+                funccall = var.storage.function_call;
+                type = General_type::FUNCCALL;
+                break;
             default:
                 type = General_type::VOID;
         }
@@ -170,7 +187,9 @@ struct GeneralTypeToken {
             source = tools::remove_unneeded_chars(source);
             source.in_quotes = true;
         }
-
+        else if(type == General_type::FUNCCALL) {
+            funccall = parse_function_call(context);
+        }
     }
     GeneralTypeToken() {}
 

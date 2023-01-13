@@ -88,8 +88,14 @@ Variable MeowScript::parse_expression(std::string str) {
                         l[0].source.push_back(i.content);
                     }
                     ++global::in_compound;
-                    right = run_lexed(l,false,false,-1,{},"",false,true);
+                    Variable v = run_lexed(l,false,false,-1,{},"",false,true);
                     --global::in_compound;
+                    if(ops.top() != ".") {
+                        while(v.type == Variable::Type::FUNCCALL) {
+                            v = evaluate_func_call(v.storage.function_call);
+                        }
+                    }
+                    right = v;
                     st.pop();
                 }
                 if(st.top().size() == 1) {
@@ -102,8 +108,12 @@ Variable MeowScript::parse_expression(std::string str) {
                         l[0].source.push_back(i.content);
                     }
                     ++global::in_compound;
-                    left = run_lexed(l,false,false,-1,{},"",false,true);
+                    Variable v = run_lexed(l,false,false,-1,{},"",false,true);
                     --global::in_compound;
+                    while(v.type == Variable::Type::FUNCCALL) {
+                        v = evaluate_func_call(v.storage.function_call);
+                    }
+                    left = v;
                     st.pop();
                 }
 
@@ -166,8 +176,14 @@ Variable MeowScript::parse_expression(std::string str) {
                 l[0].source.push_back(i.content);
             }
             ++global::in_compound;
-            right = run_lexed(l,false,false,-1,{},"",false,true);
+            Variable v = run_lexed(l,false,false,-1,{},"",false,true);
             --global::in_compound;
+            if(ops.top() != ".") {
+                while(v.type == Variable::Type::FUNCCALL) {
+                    v = evaluate_func_call(v.storage.function_call);
+                }
+            }
+            right = v;
             st.pop();
         }
         if(st.top().size() == 1) {
@@ -180,8 +196,12 @@ Variable MeowScript::parse_expression(std::string str) {
                 l[0].source.push_back(i.content);
             }
             ++global::in_compound;
-            left = run_lexed(l,false,false,-1,{},"",false,true);
+            Variable v = run_lexed(l,false,false,-1,{},"",false,true);
             --global::in_compound;
+            while(v.type == Variable::Type::FUNCCALL) {
+                v = evaluate_func_call(v.storage.function_call);
+            }
+            left = v;
             st.pop();
         }
 

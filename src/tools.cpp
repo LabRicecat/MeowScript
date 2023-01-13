@@ -116,35 +116,35 @@ matchestatement_list MeowScript::tools::parse_matchstatement(Token context, Gene
     return ret;
 }
 
-const std::vector<std::pair<GeneralTypeToken,GeneralTypeToken>> Dictionary::pairs() const {
-    std::vector<std::pair<GeneralTypeToken,GeneralTypeToken>> ret;
+const std::vector<std::pair<Variable,Variable>> Dictionary::pairs() const {
+    std::vector<std::pair<Variable,Variable>> ret;
     for(size_t i = 0; i < keys().size(); ++i) {
         ret.push_back(std::make_pair(keys()[i],values()[i]));
     }
     return ret;
 }
-std::vector<std::pair<GeneralTypeToken,GeneralTypeToken>> Dictionary::pairs() {
-    std::vector<std::pair<GeneralTypeToken,GeneralTypeToken>> ret;
+std::vector<std::pair<Variable,Variable>> Dictionary::pairs() {
+    std::vector<std::pair<Variable,Variable>> ret;
     for(size_t i = 0; i < keys().size(); ++i) {
         ret.push_back(std::make_pair(keys()[i],values()[i]));
     }
     return ret;
 }
 
-const std::vector<GeneralTypeToken>& Dictionary::keys() const {
+const std::vector<Variable>& Dictionary::keys() const {
     return i_keys;
 }
 const std::vector<Variable>& Dictionary::values() const {
     return i_values;
 }
-std::vector<GeneralTypeToken>& Dictionary::keys() {
+std::vector<Variable>& Dictionary::keys() {
     return i_keys;
 }
 std::vector<Variable>& Dictionary::values() {
     return i_values;
 }
 
-bool Dictionary::has(const GeneralTypeToken gtt) const {
+bool Dictionary::has(const Variable gtt) const {
     for(size_t i = 0; i < keys().size(); ++i) {
         if(keys()[i] == gtt) {
             return true;
@@ -153,7 +153,7 @@ bool Dictionary::has(const GeneralTypeToken gtt) const {
     return false;
 }
 
-Variable& Dictionary::operator[](GeneralTypeToken gtt) {
+Variable& Dictionary::operator[](Variable gtt) {
     for(size_t i = 0; i < keys().size(); ++i) {
         if(keys()[i] == gtt) {
             return values()[i];

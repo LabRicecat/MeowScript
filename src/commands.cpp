@@ -344,7 +344,7 @@ static std::vector<Command> commandlist = {
         GeneralTypeToken comp;
         comp.type = General_type::COMPOUND;
         if(args.size() > 3) {
-            comp.source = "{ return ( " + ret + " ) }";
+            comp.source = "{ return { " + ret + " } }";
         }
         else {
             comp.source = "{ return " + ret + " }";

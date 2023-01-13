@@ -113,6 +113,8 @@ bool function_match_template(Function templ, std::vector<Function> func);
 
 Parameter returntype_from_string(GeneralTypeToken tkn);
 
+Variable evaluate_func_call(Variable::FunctionCall funccall);
+
 struct Event {
     std::vector<Function> listeners;
     std::string from_file;

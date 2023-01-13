@@ -3,6 +3,7 @@
 #include "../inc/runner.hpp"
 #include "../inc/objects.hpp"
 #include "../inc/expressions.hpp"
+#include "../inc/kittenlexer.hpp"
 
 MEOWSCRIPT_SOURCE_FILE
 
@@ -162,7 +163,7 @@ bool MeowScript::is_ruleset(Token token) {
     for(auto i : l)
         for(auto j : i.source)
             line.push_back(j);
-
+    if(line.size() == 0) return false;
     ArgRule tmp;
     for(size_t i = 0; i < line.size(); ++i) {
         if(is_valid_operator_name(line[i])) {
@@ -514,4 +515,85 @@ Parameter MeowScript::returntype_from_string(GeneralTypeToken tkn) {
         return_type = token2var_t(tkn.to_string());
     }
     return return_type;
+}
+
+Variable MeowScript::evaluate_func_call(Variable::FunctionCall funccall) {
+    std::vector<General_type> identf_line;
+    argument_list alist = funccall.arglist;
+    std::string name = funccall.func;
+    
+    for(size_t j = 0; j < alist.size(); ++j) {
+        alist[j] = tools::check4placeholder(alist[j]);
+    }
+
+    std::vector<Variable> args;
+    for(auto i : alist) {
+        try {
+            args.push_back(i.to_variable());
+        }
+        catch(errors::MWSMessageException& err) {
+            throw err; // TODO: better message
+        }
+        catch(...) {
+            std::string err_msg = "Can't convert GeneralType " + general_t2token(i.type).content + " to VariableType as function parameter for function: " + name;
+            throw errors::MWSMessageException{err_msg,global::get_line()};
+        }
+    }
+    Function* funptr;
+    std::vector<Function> overloads;
+    if(funccall.state == 2) {
+        overloads = get_variable(name)->storage.func;
+        funptr = function_from_overloads(overloads,args);
+    }
+    else if(funccall.state == 1) {
+        overloads = functions_from_string(name);
+        funptr = function_from_overloads(overloads,args);
+    }
+    else {
+        funptr = get_function(name,args);
+    }
+
+    if(funptr == nullptr) {
+        std::string err_msg = "No overload of function " + name + " matches agumentlist!\n- Got: [";
+        for(auto i : args) {
+            err_msg += var_t2token(i.type).content + ",";
+        }
+        if(err_msg.size() != 0)
+            err_msg.pop_back();
+        throw errors::MWSMessageException{err_msg + "]",global::get_line()};
+    }
+    Function fun = *funptr;
+            
+    Variable vret;
+    if(sibling_method(name)) {
+        Object obj = current_scope()->current_obj.top();
+        MeowScript::new_scope(obj.parent_scope);
+
+        current_scope()->vars = obj.members;
+        current_scope()->functions = obj.methods;
+        current_scope()->structs = obj.structs;
+        current_scope()->current_obj.push(obj);
+
+        vret = fun.run(args,true); 
+
+        current_scope()->current_obj.pop();
+
+        obj.members = current_scope()->vars;
+        obj.methods = current_scope()->functions;
+        obj.structs = current_scope()->structs;
+                
+        current_scope()->current_obj.top() = obj;
+        pop_scope(false);
+    }
+    else {
+        vret = fun.run(args); 
+    }
+            
+    if(!fun.return_type.matches(vret)) {
+        throw errors::MWSMessageException{"Invalid return type!\n\t- Expected: " + var_t2token(fun.return_type.type).content + "\n\t- But got: " + var_t2token(vret.type).content,global::get_line()};
+    }
+    if(funccall.shadow_return) {
+        return general_null;
+    }
+    return vret;
 }

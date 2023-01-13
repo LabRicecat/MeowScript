@@ -199,12 +199,25 @@ bool MeowScript::is_valid_general_t(Token context) {
         "Object",
         "Typename",
         "Unknown",
-        "Void"
+        "Void",
+        "FUNCCALL",
     };
     for(auto i : general_t_str) {
         if(context.content == i) {
             return true;
         }
+    }
+    return false;
+}
+
+bool MeowScript::is_operator_begin(std::string s) {
+    for(auto i : operator_names) {
+        if(i.size() < s.size()) continue;
+        bool b = false;
+        for(size_t j = 0; j < s.size(); ++j) {
+            if(i[j] != s[j]) { b = true; break; }
+        }
+        if(!b) return true;
     }
     return false;
 }
@@ -266,11 +279,12 @@ bool MeowScript::is_valid_argumentlist(Token context) {
     }
     context.content.erase(context.content.begin());
     context.content.erase(context.content.begin()+context.content.size()-1);
-    if(context.content.size() == 0) {
+
+    auto lexed = lex_text(context.content);
+    if(lexed.empty() || (lexed.size() == 1 && lexed[0].source.empty())) {
         return true;
     }
 
-    auto lexed = lex_text(context);
     std::vector<Token> line;
     for(auto i : lexed)
         for(auto j : i.source) 
@@ -302,7 +316,7 @@ bool MeowScript::is_valid_parameterlist(Token context) {
     context.content.erase(context.content.begin()+context.content.size()-1);
     
     auto lines = lex_text(context.content);
-    if(lines.empty()) {
+    if(lines.empty() || (lines.size() == 1 && lines[0].source.empty())) {
         return true;
     }
     std::vector<Parameter> ret;
@@ -446,6 +460,24 @@ bool MeowScript::is_valid_function_return(Token context) {
 
 bool MeowScript::in_any_braces(Token context) {
     return brace_check(context,'(',')') || brace_check(context,'[',']') || brace_check(context,'{','}');
+}
+
+bool MeowScript::is_function_call(Token context) {
+    if(context.in_quotes) return false;
+    KittenLexer lexer = KittenLexer()
+        .add_capsule('(',')')
+        .add_capsule('{','}')
+        .add_capsule('[',']')
+        .add_con_extract(is_valid_operator_char)
+        .add_ignore(' ')
+        .add_ignore('\n')
+        .erase_empty()
+        ;
+    auto lexed = lexer.lex(context.content);
+    if(lexed.size() != 3 && lexed.size() != 2) return false;
+    if(!is_valid_name(lexed[0].src) && !is_function_literal(lexed[0].src)) return false;
+    if(!is_valid_argumentlist(lexed[1].src)) return false;
+    return (lexed.size() == 3 && lexed[2].src == "!" && !lexed[2].str) || lexed.size() == 2;
 }
 
 bool MeowScript::brace_check(Token context, char open, char close) {
@@ -651,16 +683,25 @@ std::vector<Line> MeowScript::lex_text_old(std::string source) {
     for(auto line : ret) {
         Line ln;
         ln.line_count = line.line_count;
+        std::string merges;
         for(size_t i = 0; i < line.source.size(); ++i) {
             if(line.source[i].in_quotes || line.source[i].content.size() != 1 || !is_valid_operator_char(line.source[i].content[0]) || ln.source.size() == 0) {
+                if(merges != "") {
+                    ln.source.push_back(merges);
+                    merges = "";
+                }
                 ln.source.push_back(line.source[i]);
             }
             else {
                 // Is an operator and could be merged!
-                if(ln.source.back().content.size() > 0 && !ln.source.back().in_quotes && is_valid_operator_char(ln.source.back().content[0])) {
-                    ln.source.back().content.push_back(line.source[i].content[0]);
+                if(is_operator_begin(merges + std::string(1,line.source[i].content[0]))) {
+                    merges.push_back(line.source[i].content[0]);
                 }
                 else {
+                    if(merges != "") {
+                        ln.source.push_back(merges);
+                        merges = "";
+                    }
                     ln.source.push_back(line.source[i]);
                 }
             }
@@ -734,16 +775,25 @@ std::vector<Line> MeowScript::lex_text(std::string source) {
     for(auto line : ret) {
         Line ln;
         ln.line_count = line.line_count;
+        std::string merges;
         for(size_t i = 0; i < line.source.size(); ++i) {
             if(line.source[i].in_quotes || line.source[i].content.size() != 1 || !is_valid_operator_char(line.source[i].content[0]) || ln.source.size() == 0) {
+                if(merges != "") {
+                    ln.source.push_back(merges);
+                    merges = "";
+                }
                 ln.source.push_back(line.source[i]);
             }
             else {
                 // Is an operator and could be merged!
-                if(ln.source.back().content.size() > 0 && !ln.source.back().in_quotes && is_valid_operator_char(ln.source.back().content[0])) {
-                    ln.source.back().content.push_back(line.source[i].content[0]);
+                if(is_operator_begin(merges + std::string(1,line.source[i].content[0]))) {
+                    merges.push_back(line.source[i].content[0]);
                 }
                 else {
+                    if(merges != "") {
+                        ln.source.push_back(merges);
+                        merges = "";
+                    }
                     ln.source.push_back(line.source[i]);
                 }
             }
@@ -754,19 +804,6 @@ std::vector<Line> MeowScript::lex_text(std::string source) {
         for(auto& j : i.source)
             j = tools::check4replace(j);
     }
-    for(auto& i : tm_ret) {
-        for(size_t j = 0; j < i.source.size(); ++j) {
-            if(j != 0 && j != i.source.size()-1
-                 && i.source[j].content == "." 
-                 && all_numbers(i.source[j-1],false)
-                 && all_numbers(i.source[j+1],false)
-            ) {
-                i.source[j-1].content = i.source[j-1].content + "." + i.source[j+1].content;
-                i.source.erase(i.source.begin()+j);
-                i.source.erase(i.source.begin()+j);
-            }
-        }
-    }
-
+    // TODO: add "." as operator
     return tm_ret;
 }
