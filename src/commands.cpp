@@ -248,6 +248,9 @@ static std::vector<Command> commandlist = {
     [](std::vector<GeneralTypeToken> args)->Variable {
         MWS_MUST_NOT_BE_IN_STRUCT()
         auto ret = tools::check4placeholder(args[0]);
+        while(ret.type == General_type::FUNCCALL) {
+            ret = evaluate_func_call(ret.funccall);
+        }
         ++global::runner_should_return;
         return ret.to_variable();
     }},
@@ -1114,7 +1117,7 @@ OUT:
             car_Compound, 
         },
     [](std::vector<GeneralTypeToken> args)->Variable {
-        MWS_CAN_BE_IN_STRUCT()
+        MWS_MUST_NOT_BE_IN_STRUCT()
         Function f;
         f.params = tools::parse_function_params(args[0].source);
 
@@ -1135,16 +1138,61 @@ OUT:
             car_Compound, 
         },
     [](std::vector<GeneralTypeToken> args)->Variable {
-        MWS_CAN_BE_IN_STRUCT()
+        MWS_MUST_NOT_BE_IN_STRUCT()
         Function f;
         f.params = tools::parse_function_params(args[0].source);
 
-        std::string body = args[3].source.content;
+        std::string body = args[1].source.content;
         body.erase(body.begin());
         body.pop_back();
         f.body = lex_text(body);
         
         return f;
+    }},
+    {"lambda",
+        {
+            car_ParameterList,
+            car_Operator, // "=>"
+            car_Ongoing, 
+        },
+    [](std::vector<GeneralTypeToken> args)->Variable {
+        MWS_MUST_NOT_BE_IN_STRUCT()
+        Command* real_func = get_command("lambda");
+
+        if(args[1].to_string() != "=>") {
+            throw errors::MWSMessageException{"Expected \"=>\" to declarate a return value for this lambda, but got: " + args[1].to_string(),global::get_line()};
+        }
+        args.erase(args.begin()+1);
+
+        std::string ret;
+        for(size_t i = 1; i < args.size(); ++i) {
+            ret += args[i].to_string() + " ";
+        }
+        GeneralTypeToken comp;
+        comp.type = General_type::COMPOUND;
+        if(args.size() > 2) {
+            comp.source = "{ return { " + ret + " } }";
+        }
+        else {
+            comp.source = "{ return " + ret + " }";
+        }
+        
+        while(args.size() > 1) {
+            args.erase(args.end()-1);
+        }
+
+        GeneralTypeToken op;
+        op.type = General_type::OPERATOR;
+        op.source.content = "->";
+        args.push_back(op);
+        GeneralTypeToken any;
+        any.type = General_type::NAME;
+        any.source.content = "Any";
+        args.push_back(any);
+
+        args.push_back(comp);
+        
+        return real_func->run(args);;
     }},
 
     {"match",

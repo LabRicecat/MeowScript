@@ -513,7 +513,7 @@ Variable MeowScript::run_lexed(lexed_tokens lines, bool new_scope, bool save_sco
             return ret;
         }
         else if(ret.type != Variable::Type::VOID && ret.type != Variable::Type::UNKNOWN) {
-            if(ret.type == Variable::Type::FUNCCALL) {
+            while(ret.type == Variable::Type::FUNCCALL) {
                 ret = evaluate_func_call(ret.storage.function_call);
             }
             std::cout << ret.to_string() << "\n";

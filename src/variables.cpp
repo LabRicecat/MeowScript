@@ -9,6 +9,7 @@
 #include "../inc/scopes.hpp"
 #include "../inc/expressions.hpp"
 #include "../inc/reader.hpp"
+#include "../inc/kittenlexer.hpp"
 
 #include <algorithm>
 
@@ -78,8 +79,8 @@ Variable MeowScript::make_variable(Token context, Variable::Type ty_) {
             return Variable(context.content);
         case Variable::Type::Dictionary:
             {Variable ret; ret.type = Variable::Type::Dictionary; ret.storage.dict = dic_from_token(context); return ret;}
-        //case Variable::Type::Object: 
-        //    return *get_object(context.content);
+        case Variable::Type::FUNCCALL: 
+            return parse_function_call(context);
         case Variable::Type::VOID:
             {Variable ret; ret.type = type; return ret;}
     }
@@ -1081,7 +1082,7 @@ Variable::FunctionCall MeowScript::parse_function_call(Token context) {
     if(lexed.size() != 3 && lexed.size() != 2) return Variable::FunctionCall{};
     if(!is_valid_name(lexed[0].src) && !is_function_literal(lexed[0].src)) return Variable::FunctionCall{};
     if(!is_valid_argumentlist(lexed[1].src)) return Variable::FunctionCall{};
-    if(!((lexed.size() == 3 && lexed[2].src == "!" && !lexed[2].str) || lexed.size() == 2))) return Variable::FunctionCall{};
+    if(lexed.size() == 3 && (lexed[2].src != "!" || !lexed[2].str)) return Variable::FunctionCall{};
 
     Variable::FunctionCall ret;
     ret.func = lexed[0].src;

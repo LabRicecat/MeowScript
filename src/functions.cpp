@@ -257,28 +257,19 @@ Variable MeowScript::Function::run(std::vector<Variable> args, bool method_mode)
     }
     int saved_istruct = global::in_struct;
     global::in_struct = 0;
-    GeneralTypeToken gtt_ret;
+    Variable ret;
     if(parent >= 0) load_scope(parent,{},true);
 
-    if(builtin_f) gtt_ret = builtin(args);
-    else gtt_ret = run_lexed(body,false,true,-1,arg_map,this->file);
+    if(builtin_f) ret = builtin(args);
+    else {
+        ++global::in_compound;
+        ret = run_lexed(body,false,true,-1,arg_map,this->file);
+        --global::in_compound;
+    }
 
     if(parent >= 0) pop_scope();
     global::in_struct = saved_istruct;
-    if(gtt_ret.type != General_type::VOID && gtt_ret.type != General_type::UNKNOWN) {
-        Variable var_ret;
-        try {
-            var_ret = gtt_ret.to_variable();
-        }
-        catch(errors::MWSMessageException& err) {
-            std::string err_msg = "Invalid return type!\n\t- Expected: " + var_t2token(return_type.type).content + "\n\t- But got: " + general_t2token(gtt_ret.type).content;
-            throw errors::MWSMessageException{err_msg,global::get_line()};
-        }
-        return var_ret;
-    }
-    else {
-        return Variable();
-    }
+    return ret;
 }
 
 std::string Function::to_string() const {

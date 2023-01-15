@@ -188,7 +188,7 @@ struct GeneralTypeToken {
             source.in_quotes = true;
         }
         else if(type == General_type::FUNCCALL) {
-            funccall = parse_function_call(context);
+            funccall = parse_function_call(source);
         }
     }
     GeneralTypeToken() {}

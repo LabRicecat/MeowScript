@@ -332,6 +332,9 @@ GeneralTypeToken MeowScript::tools::check4compound(GeneralTypeToken token) {
         GeneralTypeToken ret = run_text(token.source,false);
         global::in_struct = saved_istruct;
         --global::in_compound;
+        while(ret.type == General_type::FUNCCALL) {
+            ret = evaluate_func_call(ret.funccall);
+        }
         //if(ret.type == General_type::VOID) {
         //    throw errors::MWSMessageException{"Compound did not return anything!",global::get_line()};
         //}

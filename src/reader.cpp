@@ -798,6 +798,8 @@ std::vector<Line> MeowScript::lex_text(std::string source) {
                 }
             }
         }
+        if(merges != "") ln.source.push_back(merges);
+            merges = "";
         tm_ret.push_back(ln);
     }
     for(auto& i : tm_ret) {

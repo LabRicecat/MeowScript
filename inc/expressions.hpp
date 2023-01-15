@@ -391,40 +391,19 @@ inline std::unordered_map<std::string,std::vector<Operator>> operators = {
                             return ret;
                         }
                         else if(call.type == Variable::Type::String) {
-                            Method<Token>* method = get_string_method(name);
-                            if(method == nullptr) {
-                                throw errors::MWSMessageException{"Unknown string method: " + name,global::get_line()};
-                            }
+                            Operator* realop = get_operator(".",General_type::STRING,General_type::FUNCCALL);
 
-                            std::vector<Variable> args;
-                            
-                            if(method->args.size() != arglist.size()) {
-                                std::string err = "Too many/few arguments for string method: " + method->name + "\n\t- Expected: " + std::to_string(method->args.size()) + "\n\t- But got: " + std::to_string(arglist.size());
-                                throw errors::MWSMessageException{err,global::get_line()};
-                            }
+                            GeneralTypeToken gtt = *get_variable(left.source);
+                            Variable ret = realop->parse(gtt,right);
+                            *get_variable(left.source) = gtt.to_variable();
+                            return ret;
+                        }
+                        else if(call.type == Variable::Type::List) {
+                            Operator* realop = get_operator(".",General_type::LIST,General_type::FUNCCALL);
 
-                            for(size_t j = 0; j < method->args.size(); ++j) {
-                                while(arglist[j].type == General_type::FUNCCALL) {
-                                    arglist[j] = evaluate_func_call(arglist[j].funccall);
-                                }
-                                auto identf = arglist[j].type;
-                                if(!method->args[j].matches(identf)) {
-                                    std::string err_msg = "Invalid argument:\n\t- Expected: [";
-                                    for(size_t k = 0; k < method->args[j].carry.size(); ++k) {
-                                        err_msg += (k == 0 ? "":",") + general_t2token(General_type(method->args[j].carry[k]-1)).content;
-                                    }
-                                    err_msg += "]\n\t- But got: " + general_t2token(arglist[j].type).content + " (" + arglist[j].to_string() + ")";
-                                    throw errors::MWSMessageException(err_msg,global::get_line());
-                                }
-                                else {
-                                    Variable v = arglist[j].to_variable();
-                                    args.push_back(v);
-                                }
-                            }
-
-                            Token tk = get_variable(left.source)->storage.string;
-                            Variable ret = method->run(args,&tk);
-                            get_variable(left.source)->storage.string = tk;
+                            GeneralTypeToken gtt = *get_variable(left.source);
+                            Variable ret = realop->parse(gtt,right);
+                            *get_variable(left.source) = gtt.to_variable();
                             return ret;
                         }
                     }
@@ -432,15 +411,97 @@ inline std::unordered_map<std::string,std::vector<Operator>> operators = {
                 }
             },
             {
-                General_type::LIST, General_type::STRING, 999,
+                General_type::STRING, General_type::FUNCCALL, 999,
                 [](GeneralTypeToken left, GeneralTypeToken right)->Variable {
                     Variable left_v = left.to_variable();
                     Variable right_v = right.to_variable();
-                    Variable ret;
-                    ret.set(left_v.storage.string.content + right_v.storage.string.content);
-                    return ret;
+
+                    std::string name = right_v.storage.function_call.func;
+                    argument_list arglist = right_v.storage.function_call.arglist;
+
+                    Method<Token>* method = get_string_method(name);
+                    if(method == nullptr) {
+                        throw errors::MWSMessageException{"Unknown string method: " + name,global::get_line()};
+                    }
+
+                    std::vector<Variable> args;
+                            
+                    if(method->args.size() != arglist.size()) {
+                        std::string err = "Too many/few arguments for string method: " + method->name + "\n\t- Expected: " + std::to_string(method->args.size()) + "\n\t- But got: " + std::to_string(arglist.size());
+                        throw errors::MWSMessageException{err,global::get_line()};
+                    }
+
+                    for(size_t j = 0; j < method->args.size(); ++j) {
+                        while(arglist[j].type == General_type::FUNCCALL) {
+                            arglist[j] = evaluate_func_call(arglist[j].funccall);
+                        }
+                        auto identf = arglist[j].type;
+                        if(!method->args[j].matches(identf)) {
+                            std::string err_msg = "Invalid argument:\n\t- Expected: [";
+                            for(size_t k = 0; k < method->args[j].carry.size(); ++k) {
+                                err_msg += (k == 0 ? "":",") + general_t2token(General_type(method->args[j].carry[k]-1)).content;
+                            }
+                            err_msg += "]\n\t- But got: " + general_t2token(arglist[j].type).content + " (" + arglist[j].to_string() + ")";
+                            throw errors::MWSMessageException(err_msg,global::get_line());
+                        }
+                        else {
+                            Variable v = arglist[j].to_variable();
+                            args.push_back(v);
+                        }
+                    }
+
+                    Token tk = left_v.storage.string;
+                    Variable ret = method->run(args,&tk);
+                    if(ret != general_null) return ret;
+                    return tk;
                 }
             },
+            {
+                General_type::LIST, General_type::FUNCCALL, 999,
+                [](GeneralTypeToken left, GeneralTypeToken right)->Variable {
+                    Variable left_v = left.to_variable();
+                    Variable right_v = right.to_variable();
+
+                    std::string name = right_v.storage.function_call.func;
+                    argument_list arglist = right_v.storage.function_call.arglist;
+
+                    Method<List>* method = get_list_method(name);
+                    if(method == nullptr) {
+                        throw errors::MWSMessageException{"Unknown list method: " + name,global::get_line()};
+                    }
+
+                    std::vector<Variable> args;
+                                
+                    if(method->args.size() != arglist.size()) {
+                        std::string err = "Too many/few arguments for list method: " + method->name + "\n\t- Expected: " + std::to_string(method->args.size()) + "\n\t- But got: " + std::to_string(arglist.size());
+                        throw errors::MWSMessageException{err,global::get_line()};
+                    }
+
+                    for(size_t j = 0; j < method->args.size(); ++j) {
+                        while(arglist[j].type == General_type::FUNCCALL) {
+                            arglist[j] = evaluate_func_call(arglist[j].funccall);
+                        }
+                        auto identf = arglist[j].type;
+                        if(!method->args[j].matches(identf)) {
+                            std::string err_msg = "Invalid argument:\n\t- Expected: [";
+                            for(size_t k = 0; k < method->args[j].carry.size(); ++k) {
+                                err_msg += (k == 0 ? "":",") + general_t2token(General_type(method->args[j].carry[k]-1)).content;
+                            }
+                            err_msg += "]\n\t- But got: " + general_t2token(arglist[j].type).content + " (" + arglist[j].to_string() + ")";
+                            throw errors::MWSMessageException(err_msg,global::get_line());
+                        }
+                        else {
+                            Variable v = arglist[j].to_variable();
+                            args.push_back(v);
+                        }
+                    }
+
+                    List ls = left_v.storage.list;
+                    Variable ret = method->run(args,&ls);
+                    if(ret != general_null) return ret;
+                    return ls;
+                }   
+            }
         }},
     }
 };
