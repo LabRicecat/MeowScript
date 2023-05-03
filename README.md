@@ -7,41 +7,39 @@
 </div>
 <img src="https://img.shields.io/github/license/LabRiceCat/MeowScript"/>  
 
-A small interpreted, easy extendable programming language.  
+A small interpreted, easy and extendable programming language.  
 
 ## Requirements
-|             | Compiler            | BuildTool     | Recomendet|
-|-------------|---------------------|---------------|-----------|
-| Linux       | g++/clang++         | cmake         |  -------  |
-| Windows*    | mingw64-g++/clang++ | nmake & cmake |   Msys2   |
-| MacOS*      | ---------           | ----------    |  -------  |
+|             | Compiler            | Build tool     | Recommended |
+|-------------|---------------------|----------------|-------------|
+| Linux       | g++/clang++         | cmake          | ----------- |
+| Windows*    | mingw64-g++/clang++ | nmake & cmake  | Msys2       |
+| MacOS*      | ------------------- | -------------- | ----------- |
 
-\* still not 100% supported
+\*: still not fully supported
 
 ## Installing
-Execute this commands in your shell to download and build MeowScript.
+Execute these commands in your shell to download and build MeowScript:
+```sh
+git clone https://github.com/LabRicecat/MeowScript.git
+cd MeowScript
+mkdir build
+cd build
+cmake ..
+make
 ```
-$ git clone https://github.com/LabRicecat/MeowScript.git
-$ cd MeowScript
-$ mkdir build
-$ cd build
-$ cmake ..
-$ make
-```
-Now you can run the interpreter.
-```
-$ meow-script --help
+Now you can run the interpreter:
+```sh
+meow-script --help
 ```
 
 ## How to use
-Read the wiki here.
-
-**[To the Wiki Pages!](https://github.com/SirWolfi/MeowScript/wiki)**
+**[Read the wiki here](https://github.com/SirWolfi/MeowScript/wiki)**
 
 ## Try it out
-You can try out MeowScript live by using the `--shell` option or make a `main.mws` and run it with
-```
-$ meow-script main.mws
+You can try out MeowScript REPL by using the `--shell` option or make a `main.mws` and run it with
+```sh
+meow-script main.mws
 ```
 
 ## Credits
