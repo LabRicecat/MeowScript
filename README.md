@@ -3,8 +3,6 @@
 
 # MeowScript
 
-![Error Loading Image!](./assets/LogoLong.png)
-
 <div id="badges">
    <img src="https://img.shields.io/github/v/release/LabRiceCat/MeowScript?label=latest&style=for-the-badge"/>
 </div>
@@ -44,6 +42,3 @@ You can try out MeowScript REPL by using the `--shell` option or make a `main.mw
 ```sh
 meow-script main.mws
 ```
-
-## Credits
-Cute cat on the PC by DALL-E 2.0
